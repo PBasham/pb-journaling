@@ -35,7 +35,7 @@ const SubText: FunctionComponent<SubTextProps> = (props: SubTextProps) => {
 
         textStyles,
 
-        onPress = () => console.log("I've been clicked!")
+        onPress = () => console.log("I've been clicked (SubText)!")
     } = props
 
     const SubTextStyle = styled.Text`

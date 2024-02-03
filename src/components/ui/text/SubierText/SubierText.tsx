@@ -6,7 +6,7 @@ import styled from "styled-components/native"
 import { textColors } from "../../../../assets"
 
 
-export interface BodyTextProps {
+export interface SubierTextProps {
     /** Text to display */
     text?: string
     /** Font size for text */
@@ -25,20 +25,20 @@ export interface BodyTextProps {
     onPress?: (() => void) | ((e: any) => void)
 }
 
-const BodyText: FunctionComponent<BodyTextProps> = (props: BodyTextProps) => {
+const SubierText: FunctionComponent<SubierTextProps> = (props: SubierTextProps) => {
     const {
         text,
-        fontSize = "20px",
-        textColor = textColors.body,
+        fontSize = "16px",
+        textColor = textColors.subText,
         textAlignment = "center",
         textVerticalAlignment = "middle",
 
         textStyles,
 
-        onPress = () => console.log("I've been clicked (BodyText)!")
+        onPress = () => console.log("I've been clicked (SubierText)!")
     } = props
 
-    const BodyTextStyle = styled.Text`
+    const SubTextStyle = styled.Text`
     /* padding-bottom: 5px; */
     width: 100%;
     
@@ -52,7 +52,7 @@ const BodyText: FunctionComponent<BodyTextProps> = (props: BodyTextProps) => {
 
 `
 
-    return <BodyTextStyle style={textStyles} onPress={onPress} >{text}</BodyTextStyle>
+    return <SubTextStyle style={textStyles} onPress={onPress} >{text}</SubTextStyle>
 }
 
-export default BodyText
+export default SubierText
