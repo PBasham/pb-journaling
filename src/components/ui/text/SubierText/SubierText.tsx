@@ -18,6 +18,9 @@ export interface SubierTextProps {
     /** Vertical Alignment for text */
     textVerticalAlignment?: "top" | "middle" | "bottom"
 
+    /** Number of lines to show before using '...'*/
+    lines?: number
+
     /** Additional css styling */
     textStyles?: StyleProp<TextStyle>;
 
@@ -32,6 +35,8 @@ const SubierText: FunctionComponent<SubierTextProps> = (props: SubierTextProps) 
         textColor = textColors.subText,
         textAlignment = "center",
         textVerticalAlignment = "middle",
+
+        lines,
 
         textStyles,
 
@@ -52,7 +57,7 @@ const SubierText: FunctionComponent<SubierTextProps> = (props: SubierTextProps) 
 
 `
 
-    return <SubTextStyle style={textStyles} onPress={onPress} >{text}</SubTextStyle>
+    return <SubTextStyle numberOfLines={lines} style={textStyles} onPress={onPress} >{text}</SubTextStyle>
 }
 
 export default SubierText

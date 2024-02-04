@@ -18,6 +18,9 @@ export interface HeaderOneProps {
     /** Vertical Alignment for text */
     textVerticalAlignment?: "top" | "middle" | "bottom"
 
+    /** Number of lines to show before using '...'*/
+    lines?: number
+    
     /** Additional css styling */
     textStyles?: StyleProp<TextStyle>;
 
@@ -32,6 +35,7 @@ const HeaderOne: FunctionComponent<HeaderOneProps> = (props: HeaderOneProps) => 
         textColor = textColors.header_One,
         textAlignment = "center",
         textVerticalAlignment = "middle",
+        lines,
 
         textStyles,
 
@@ -52,7 +56,7 @@ const HeaderOne: FunctionComponent<HeaderOneProps> = (props: HeaderOneProps) => 
 
 `
 
-    return <HeaderOneStyle style={textStyles} onPress={onPress} >{text}</HeaderOneStyle>
+    return <HeaderOneStyle numberOfLInes={lines} style={textStyles} onPress={onPress} >{text}</HeaderOneStyle>
 }
 
 export default HeaderOne

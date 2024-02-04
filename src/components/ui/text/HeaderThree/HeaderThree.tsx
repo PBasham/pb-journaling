@@ -18,6 +18,9 @@ export interface HeaderThreeProps {
     /** Vertical Alignment for text */
     textVerticalAlignment?: "top" | "middle" | "bottom"
 
+    /** Number of lines to show before using '...'*/
+    lines?: number
+    
     /** Additional css styling */
     textStyles?: StyleProp<TextStyle>;
 
@@ -33,6 +36,8 @@ const HeaderThree: FunctionComponent<HeaderThreeProps> = (props: HeaderThreeProp
         textAlignment = "center",
         textVerticalAlignment = "middle",
 
+        lines,
+
         textStyles,
 
         onPress
@@ -47,7 +52,7 @@ const HeaderThree: FunctionComponent<HeaderThreeProps> = (props: HeaderThreeProp
     /* font-family: Lato-Bold; */
 `
 
-    return <HeaderThreeStyle style={textStyles} onPress={onPress} >{text}</HeaderThreeStyle>
+    return <HeaderThreeStyle numberOfLines={lines} style={textStyles} onPress={onPress} >{text}</HeaderThreeStyle>
 }
 
 export default HeaderThree

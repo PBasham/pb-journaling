@@ -18,6 +18,9 @@ export interface BodyTextProps {
     /** Vertical Alignment for text */
     textVerticalAlignment?: "top" | "middle" | "bottom"
 
+    /** Number of lines to show before using '...'*/
+    lines?: number
+    
     /** Additional css styling */
     textStyles?: StyleProp<TextStyle>;
 
@@ -32,6 +35,8 @@ const BodyText: FunctionComponent<BodyTextProps> = (props: BodyTextProps) => {
         textColor = textColors.body,
         textAlignment = "center",
         textVerticalAlignment = "middle",
+
+        lines,
 
         textStyles,
 
@@ -52,7 +57,7 @@ const BodyText: FunctionComponent<BodyTextProps> = (props: BodyTextProps) => {
 
 `
 
-    return <BodyTextStyle style={textStyles} onPress={onPress} >{text}</BodyTextStyle>
+    return <BodyTextStyle numberOfLines={lines} style={textStyles} onPress={onPress} >{text}</BodyTextStyle>
 }
 
 export default BodyText

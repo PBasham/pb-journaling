@@ -18,6 +18,9 @@ export interface HeaderTwoProps {
     /** Vertical Alignment for text */
     textVerticalAlignment?: "top" | "middle" | "bottom"
 
+    /** Number of lines to show before using '...'*/
+    lines?: number
+
     /** Additional css styling */
     textStyles?: StyleProp<TextStyle>;
 
@@ -32,6 +35,8 @@ const HeaderTwo: FunctionComponent<HeaderTwoProps> = (props: HeaderTwoProps) => 
         textColor = textColors.header_Two,
         textAlignment = "center",
         textVerticalAlignment = "middle",
+
+        lines,
 
         textStyles,
 
@@ -53,7 +58,7 @@ const HeaderTwo: FunctionComponent<HeaderTwoProps> = (props: HeaderTwoProps) => 
 
 `
 
-    return <HeaderTwoStyle style={textStyles} onPress={onPress} >{text}</HeaderTwoStyle>
+    return <HeaderTwoStyle numberOfLines={lines} style={textStyles} onPress={onPress} >{text}</HeaderTwoStyle>
 }
 
 export default HeaderTwo

@@ -36,8 +36,8 @@ export interface Book {
     password?: string
     pin?: string
 
-    created_at: Date
-    updated_at: Date
+    updatedAt: Date
+    createdAt: Date
 
     pages: Note[]
 }
@@ -45,22 +45,24 @@ export interface Book {
 export interface Note {
     collectionRef?: number | null
     bookRef?: number | null
+    
+    recordId: number
+    id: string
 
-    name: string // name of colleciton
+    title: string
+    feeling: string
+    text: string
     color: string
     isFavorite: boolean
-
+    
     isLocked: boolean
     lockType?: LockType
     password?: string
     pin?: string
 
-    created_at: Date
-    updated_at: Date
+    createdAt: Date
+    updatedAt: Date
 
-    title: string
-    feeling: string
-    text: string
 
 }
 
