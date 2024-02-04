@@ -2,6 +2,8 @@ export const generalColors = {
     light: "#FFF",
     dark: "#000",
 
+    background: "#f3f3f3",
+
     dark_transparent: "rgba(0,0,0,.5)",
     light_transparent: "rgba(255,255,255,.4)",
     lightGray_transparent: "rgba(175,175,175,.1)",

@@ -25,55 +25,47 @@ const CollectionScreenContainer = styled.ScrollView`
     
     width: 100%;
     height: 100%;
-    /* background-color: ${colors.generalColors.light}; */
-    background-color: #f3f3f3;
+    background-color: ${colors.generalColors.background};
 `;
 
 const CollectionsDiv = styled.View`
-    
+
+    gap: 20px;
+
     min-height: 60px;
 
-    border-radius: 8px;
-    background-color: ${colors.generalColors.light};
-
-    overflow: hidden;
-`;
+    `;
+    const CollectionCard = styled.View`
+        background-color: ${colors.generalColors.light};
+        border-radius: 8px;
+        overflow: hidden;
+    `;
 const CollectionColorBar = styled.View`
-    
     min-height: 20px;
     background-color: #f4f430;
-`;
+    `;
 const CollectionInnerDiv = styled.View`
     flex: 1;
+    padding: 5px 10px;
+    `;
 
-    padding: 10px;
-
-`;
-
-
-
-
-
-const CollectionCard = styled.View`
-
-    
-`;
 
 
 const BooksDiv = styled(Container)`
-
     flex: 1;
-
     background-color: lightgreen;
-
 `;
 
 const NotesDiv = styled(Container)`
-
     flex: 1;
-
     background-color: gray;
+`;
 
+const DividerBar = styled.View`
+    margin: 20px 0;
+    height: 1px;
+    width: 100%;
+    background-color: black;
 `;
 
 const Collections: FunctionComponent = () => {
@@ -109,19 +101,28 @@ const Collections: FunctionComponent = () => {
             <CollectionScreenContainer >
 
                 <CollectionsDiv>
-                    <CollectionColorBar/>
-                    <CollectionInnerDiv>
+                    <CollectionCard>
+                        <CollectionColorBar />
+                        <CollectionInnerDiv>
+                            <BodyText textAlignment="left" text="My Collection" />
+                            <SubierText textAlignment="left" text="Tue 11:15am" />
+                            <SubText textAlignment="left" text="1 Book, 2 Notes" />
+                        </CollectionInnerDiv>
 
-                    <BodyText textAlignment="left" text="My Collection"/>
-                    <SubierText textAlignment="left" text="Tue 11:15am"/>
-                    <SubText textAlignment="left" text="1 Book, 2 Notes"/>
+                    </CollectionCard>
+                    <CollectionCard>
+                        <CollectionColorBar />
+                        <CollectionInnerDiv>
+                            <BodyText textAlignment="left" text="My Collection" />
+                            <SubierText textAlignment="left" text="Tue 11:15am" />
+                            <SubText textAlignment="left" text="1 Book, 2 Notes" />
+                        </CollectionInnerDiv>
 
-
-                    </CollectionInnerDiv>
-
-
+                    </CollectionCard>
                 </CollectionsDiv>
-                
+
+                <DividerBar />
+
                 <BooksDiv></BooksDiv>
                 <NotesDiv></NotesDiv>
 
