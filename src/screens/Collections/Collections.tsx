@@ -15,18 +15,19 @@ import { SubierText } from "../../components/ui/text/SubierText";
 import { Ionicons } from "@expo/vector-icons";
 
 const CollectionScreenContainer = styled.ScrollView`
-    //justify-content: space-between;
-
+    flex: 1;
+   
+    /* width: 100%;
+    height: 100%; */
+    background-color: ${colors.generalColors.background};
+`;
+const CollectionScreenContainerInner = styled.View`
     gap: 20px;
 
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 40px;
     padding-bottom: 40px;
-    
-    width: 100%;
-    height: 100%;
-    background-color: ${colors.generalColors.background};
 `;
 
 const CollectionsDiv = styled.View`
@@ -44,7 +45,7 @@ const CollectionCard = styled.View`
     `;
 const CollectionColorBar = styled.View`
     height: 20px;
-    background-color: #f4f430;
+    background-color: #ababab;
     `;
 const CollectionInnerDiv = styled.View`
     flex: 1;
@@ -75,7 +76,7 @@ const BookCard = styled.View`
 const BookColorBar = styled.View`
     height: 100%;
     width: 20px;
-    background-color: #f4f430;
+    background-color: #ababab;
     `;
 const BookInnerDiv = styled.View`
     flex: 1;
@@ -107,7 +108,7 @@ const NoteInnerDiv = styled.View`
 
 
 const DividerBar = styled.View`
-    margin: 20px 0;
+    margin: 30px 0;
     height: 1px;
     width: 100%;
     background-color: black;
@@ -120,7 +121,7 @@ const FilterDividerBar = styled.View`
     align-items: center;
     gap: 10px;
     
-    margin: 20px 0;
+    margin: 30px 0;
 `;
 
 
@@ -211,10 +212,26 @@ const Collections: FunctionComponent = () => {
             collectionRef: null,
             bookRef: null,
 
-
-
             recordId: 1,
-            id: "book1",
+            id: "note1",
+
+            color: "",
+            title: "book1",
+            feeling: "feeling",
+            text: "Ipsum Lorim isffe Lorim isffe Lorim isffe Lorim isffe Lorim isffe ",
+
+            isFavorite: false,
+            isLocked: false,
+
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+        {
+            collectionRef: null,
+            bookRef: null,
+
+            recordId: 2,
+            id: "note2",
 
             color: "",
             title: "book1",
@@ -237,65 +254,65 @@ const Collections: FunctionComponent = () => {
         <>
             <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} />
             <CollectionScreenContainer >
+                <CollectionScreenContainerInner>
+                    <CollectionsDiv>
 
-                <CollectionsDiv>
-
-                    {collections.map((collection) => {
-
-
-
-                        return <CollectionCard key={`${collection.recordId}-${collection.createdAt}`} >
-                            <CollectionColorBar />
-                            <CollectionInnerDiv>
-                                <BodyText textAlignment="left" text={collection.name} />
-                                <SubierText textAlignment="left" text="Tue 11:15am" />
-                                <SubText textAlignment="left" text={`${collection.books.length} Books, ${collection.notes.length} Notes`} />
-                            </CollectionInnerDiv>
-                        </CollectionCard>
-                    })}
-
-
-                </CollectionsDiv>
-
-                <DividerBar />
-                <BooksDiv>
-                    {books.map((book) => {
+                        {collections.map((collection) => {
 
 
 
-                        return <BookCard key={`${book.recordId}-${book.createdAt}`}>
-                            <BookColorBar />
-                            <BookInnerDiv>
-                                <BodyText textAlignment="left" text={book.name} />
-                                <SubierText textAlignment="left" text="Tue 11:15am" />
-                                <SubText textAlignment="left" text={`${book.pages.length} Pages`} />
-                            </BookInnerDiv>
-                        </BookCard>
-                    })}
+                            return <CollectionCard key={`${collection.recordId}-${collection.createdAt}`} >
+                                <CollectionColorBar />
+                                <CollectionInnerDiv>
+                                    <BodyText textAlignment="left" text={collection.name} />
+                                    <SubierText textAlignment="left" text="Tue 11:15am" />
+                                    <SubText textAlignment="left" text={`${collection.books.length} Books, ${collection.notes.length} Notes`} />
+                                </CollectionInnerDiv>
+                            </CollectionCard>
+                        })}
 
 
-                </BooksDiv>
+                    </CollectionsDiv>
 
-                <FilterDividerBar>
-                    <HeaderThree text="Filter" textStyles={{ borderRightWidth: 2, paddingRight: 20, height: 30 }} />
-                    <Ionicons
-                        name={`arrow-down-outline`}
-                        size={24}
-                        color="black"
-                        onPress={() => { console.log("Change filter direction!") }}
-                    />
-                </FilterDividerBar>
+                    <DividerBar />
+                    <BooksDiv>
+                        {books.map((book) => {
 
-                <NotesDiv>
-                    {notes.map((note) => {
-                        return <NoteCard key={`${note.id}-${note.createdAt}`}>
-                            <BodyText textAlignment="left" text={note.title} />
-                            <SubierText textAlignment="left" text={`${note.updatedAt.toDateString()}`} />
-                            <SubText lines={1} textStyles={{ marginTop: "auto", marginBottom: "auto" }} textAlignment="left" text={note.text} />
-                        </NoteCard>
-                    })}
-                </NotesDiv>
 
+
+                            return <BookCard key={`${book.recordId}-${book.createdAt}`}>
+                                <BookColorBar />
+                                <BookInnerDiv>
+                                    <BodyText textAlignment="left" text={book.name} />
+                                    <SubierText textAlignment="left" text="Tue 11:15am" />
+                                    <SubText textAlignment="left" text={`${book.pages.length} Pages`} />
+                                </BookInnerDiv>
+                            </BookCard>
+                        })}
+
+
+                    </BooksDiv>
+
+                    <FilterDividerBar>
+                        <HeaderThree text="Filter" textStyles={{ borderRightWidth: 2, paddingRight: 20, height: 30 }} />
+                        <Ionicons
+                            name={`arrow-down-outline`}
+                            size={24}
+                            color="black"
+                            onPress={() => { console.log("Change filter direction!") }}
+                        />
+                    </FilterDividerBar>
+
+                    <NotesDiv>
+                        {notes.map((note) => {
+                            return <NoteCard key={`${note.id}-${note.createdAt}`}>
+                                <BodyText textAlignment="left" text={note.title} />
+                                <SubierText textAlignment="left" text={`${note.updatedAt.toDateString()}`} />
+                                <SubText lines={1} textStyles={{ marginTop: "auto", marginBottom: "auto" }} textAlignment="left" text={note.text} />
+                            </NoteCard>
+                        })}
+                    </NotesDiv>
+                </CollectionScreenContainerInner>
             </CollectionScreenContainer>
         </>
     )

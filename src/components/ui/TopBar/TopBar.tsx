@@ -80,7 +80,7 @@ const TopBar: FunctionComponent<TopBarProps> = (props: TopBarProps) => {
     align-items: center;
     /* gap: 10px; */
     
-    height: 60px;
+    height: 50px;
     width: 100%;
     padding-left: 10px;
     padding-right: 10px;
