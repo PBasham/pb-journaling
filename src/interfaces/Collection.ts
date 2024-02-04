@@ -4,7 +4,7 @@ export interface Collection {
     id: string
     
     name: string // name of colleciton
-    color: string
+    color: string | null
     isFavorite: boolean
 
     isLocked: boolean
@@ -28,7 +28,7 @@ export interface Book {
     id: string
 
     name: string // name of colleciton
-    color: string
+    color: string | null
     isFavorite: boolean
 
     isLocked: boolean
@@ -52,7 +52,7 @@ export interface Note {
     title: string
     feeling: string
     text: string
-    color: string
+    color: string | null
     isFavorite: boolean
     
     isLocked: boolean

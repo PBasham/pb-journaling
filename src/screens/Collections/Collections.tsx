@@ -2,8 +2,7 @@ import React, { FunctionComponent } from "react";
 import styled from "styled-components/native";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 // components --------------------------------------------------
-import { Container, ScreenHeight, ScreenWidth } from "../../components/shared";
-import { HeaderOne, BodyText, SubText, HeaderTwo, HeaderThree } from "../../components/ui/text";
+import { HeaderOne, BodyText, SubText, SubierText, HeaderTwo, HeaderThree } from "../../components/ui/text";
 import { TopBar } from "../../components/ui";
 
 // misc --------------------------------------------------
@@ -11,8 +10,9 @@ import { TopBar } from "../../components/ui";
 import { colors, generalColors, textColors } from "../../assets";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Book, Collection, Note } from "../../interfaces/Collection";
-import { SubierText } from "../../components/ui/text/SubierText";
 import { Ionicons } from "@expo/vector-icons";
+import { CollectionCard } from "../../components/CollectionCard";
+
 
 const CollectionScreenContainer = styled.ScrollView`
     flex: 1;
@@ -36,23 +36,6 @@ const CollectionsDiv = styled.View`
     
     min-height: 80px;
     `;
-const CollectionCard = styled.View`
-    height: 100px;
-    background-color: ${colors.generalColors.light};
-    border-radius: 8px;
-
-    overflow: hidden;
-    `;
-const CollectionColorBar = styled.View`
-    height: 20px;
-    background-color: #ababab;
-    `;
-const CollectionInnerDiv = styled.View`
-    flex: 1;
-    padding: 5px 10px;
-    `;
-
-
 
 const BooksDiv = styled.View`
     flex: 1;
@@ -127,14 +110,12 @@ const FilterDividerBar = styled.View`
 
 const Collections: FunctionComponent = () => {
 
-
-
     const collections: Collection[] = [
         {
             recordId: 1,
             id: "col1",
             name: "Col 1",
-            color: "yellow",
+            color: null,
             isFavorite: false,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -145,21 +126,21 @@ const Collections: FunctionComponent = () => {
             isLocked: false,
 
         },
-        {
-            recordId: 2,
-            id: "col1",
-            name: "Col 2",
-            color: "yellow",
-            isFavorite: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+        // {
+        //     recordId: 2,
+        //     id: "col1",
+        //     name: "Col 2",
+        //     color: null,
+        //     isFavorite: false,
+        //     createdAt: new Date(),
+        //     updatedAt: new Date(today.setDate(today.getDate() - 8)),
 
-            books: [],
-            notes: [],
+        //     books: [],
+        //     notes: [],
 
-            isLocked: false,
+        //     isLocked: false,
 
-        },
+        // },
     ]
 
     const books: Book[] = [
@@ -167,7 +148,7 @@ const Collections: FunctionComponent = () => {
             recordId: 1,
             id: "book1",
             name: "book1",
-            color: "yellow",
+            color: "#ababab",
             isFavorite: false,
 
             isLocked: false,
@@ -181,7 +162,7 @@ const Collections: FunctionComponent = () => {
             recordId: 2,
             id: "book2",
             name: "Book 2",
-            color: "yellow",
+            color: "#ababab",
             isFavorite: false,
 
             isLocked: false,
@@ -195,7 +176,7 @@ const Collections: FunctionComponent = () => {
             recordId: 3,
             id: "book2",
             name: "Book 2",
-            color: "yellow",
+            color: "#ababab",
             isFavorite: false,
 
             isLocked: false,
@@ -259,16 +240,25 @@ const Collections: FunctionComponent = () => {
 
                         {collections.map((collection) => {
 
+                            
 
 
-                            return <CollectionCard key={`${collection.recordId}-${collection.createdAt}`} >
-                                <CollectionColorBar />
-                                <CollectionInnerDiv>
-                                    <BodyText textAlignment="left" text={collection.name} />
-                                    <SubierText textAlignment="left" text="Tue 11:15am" />
-                                    <SubText textAlignment="left" text={`${collection.books.length} Books, ${collection.notes.length} Notes`} />
-                                </CollectionInnerDiv>
-                            </CollectionCard>
+                            return <CollectionCard
+                            key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
+                            recordId={collection.recordId}
+                            id={collection.id}
+                            name={collection.name}
+                            color={collection.color}
+                            isFavorite={collection.isFavorite}
+                            isLocked={collection.isLocked}
+                            lockType={collection.lockType}
+                            password={collection.password}
+                            pin={collection.pin}
+                            createdAt={collection.createdAt}
+                            updatedAt={collection.updatedAt}
+                            books={collection.books}
+                            notes={collection.notes}
+                            />
                         })}
 
 
