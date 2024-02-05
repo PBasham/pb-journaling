@@ -13,6 +13,8 @@ import { Book, Collection, Note } from "../../interfaces/Collection";
 import { Ionicons } from "@expo/vector-icons";
 import { CollectionCard } from "../../components/CollectionCard";
 
+import { OrderByBar } from "../../components/ui/OrderByBar";
+
 
 const CollectionScreenContainer = styled.ScrollView`
     flex: 1;
@@ -97,15 +99,7 @@ const DividerBar = styled.View`
     background-color: black;
     `;
 
-const FilterDividerBar = styled.View`
-    flex: 1;
-    flex-direction: row;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    
-    margin: 30px 0;
-`;
+
 
 
 const Collections: FunctionComponent = () => {
@@ -115,7 +109,7 @@ const Collections: FunctionComponent = () => {
             recordId: 1,
             id: "col1",
             name: "Col 1",
-            color: null,
+            color: "#fab70d",
             isFavorite: false,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -240,27 +234,27 @@ const Collections: FunctionComponent = () => {
 
                         {collections.map((collection) => {
                             return <CollectionCard
-                            key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
-                            recordId={collection.recordId}
-                            id={collection.id}
-                            name={collection.name}
-                            color={collection.color}
-                            isFavorite={collection.isFavorite}
-                            isLocked={collection.isLocked}
-                            lockType={collection.lockType}
-                            password={collection.password}
-                            pin={collection.pin}
-                            createdAt={collection.createdAt}
-                            updatedAt={collection.updatedAt}
-                            books={collection.books}
-                            notes={collection.notes}
+                                key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
+                                recordId={collection.recordId}
+                                id={collection.id}
+                                name={collection.name}
+                                color={collection.color}
+                                isFavorite={collection.isFavorite}
+                                isLocked={collection.isLocked}
+                                lockType={collection.lockType}
+                                password={collection.password}
+                                pin={collection.pin}
+                                createdAt={collection.createdAt}
+                                updatedAt={collection.updatedAt}
+                                books={collection.books}
+                                notes={collection.notes}
                             />
                         })}
 
 
                     </CollectionsDiv>
 
-                    <DividerBar />
+                    <OrderByBar />
                     <BooksDiv>
                         {books.map((book) => {
 
@@ -279,15 +273,7 @@ const Collections: FunctionComponent = () => {
 
                     </BooksDiv>
 
-                    <FilterDividerBar>
-                        <HeaderThree text="Filter" textStyles={{ borderRightWidth: 2, paddingRight: 20, height: 30 }} />
-                        <Ionicons
-                            name={`arrow-down-outline`}
-                            size={24}
-                            color="black"
-                            onPress={() => { console.log("Change filter direction!") }}
-                        />
-                    </FilterDividerBar>
+                    <OrderByBar />
 
                     <NotesDiv>
                         {notes.map((note) => {
