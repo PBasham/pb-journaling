@@ -126,21 +126,21 @@ const Collections: FunctionComponent = () => {
             isLocked: false,
 
         },
-        // {
-        //     recordId: 2,
-        //     id: "col1",
-        //     name: "Col 2",
-        //     color: null,
-        //     isFavorite: false,
-        //     createdAt: new Date(),
-        //     updatedAt: new Date(today.setDate(today.getDate() - 8)),
+        {
+            recordId: 2,
+            id: "col1",
+            name: "Col 2",
+            color: null,
+            isFavorite: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
 
-        //     books: [],
-        //     notes: [],
+            books: [],
+            notes: [],
 
-        //     isLocked: false,
+            isLocked: false,
 
-        // },
+        },
     ]
 
     const books: Book[] = [
@@ -239,10 +239,6 @@ const Collections: FunctionComponent = () => {
                     <CollectionsDiv>
 
                         {collections.map((collection) => {
-
-                            
-
-
                             return <CollectionCard
                             key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
                             recordId={collection.recordId}
