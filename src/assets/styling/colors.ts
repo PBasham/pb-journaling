@@ -30,7 +30,11 @@ export const textColors = {
     body: "#000",
     subText: "#AAA",
 }
+export const cardColors = {
+    colorBar: { default: "#ababab" },
+    cardBackground: "#000",
 
+}
 export const tabBarColors = {
     bar: "#FFF",
     background: "#fff",

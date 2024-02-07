@@ -2,6 +2,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const dayShortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export const getDate = (): Date => { return new Date() }
 
@@ -29,6 +30,9 @@ export const formatDate = (date: Date | undefined): string => {
     
     return `${mm}/${dd}/${yyyy}`
 }
+
+
+
 export const formatDateWithTime = (date: Date | undefined): string => {
     if (!date) return ""
     const mm = (date.getMonth() + 1).toString().padStart(2, "0")
@@ -74,7 +78,20 @@ export const formatDateNamedAndTime = (date: Date | undefined): string => {
 
     return `${dayName}, ${monthName} ${yyyy} ${time}`
 }
+export const formatDateDayNamed = (date: Date) => {
+    const dd = date.getDay();
 
+    let dayName = dayNames[dd];
+
+    return `${dayName}`;
+}
+export const formatDateDayNamedAndTime = (date: Date) => {
+    const dd = date.getDay();
+
+    let dayName = dayShortNames[dd];
+    const time = converTimeToAMPM(date)
+    return `${dayName} ${time}`;
+}
 export const getNamedDayMonthYear = (): string => {
 
     let date = new Date()
@@ -99,4 +116,22 @@ export const getNamedDayMonthYear = (): string => {
     if (hh === 0) hh = 12
     return `${hh.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}${tt}`
 
+}
+
+export const getRelativeDate = (date: Date) => {
+
+    const today = new Date();
+
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    let weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7)
+
+    let formatedDate: string = date.toLocaleDateString();
+
+    if (matchesToday(date)) { formatedDate = converTimeToAMPM(date) }
+    else if (date > weekAgo) { formatedDate = formatDateDayNamedAndTime(date) }
+
+    return formatedDate;    
 }

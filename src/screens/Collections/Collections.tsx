@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { CollectionCard } from "../../components/CollectionCard";
 
 import { OrderByBar } from "../../components/ui/OrderByBar";
+import { BookCard } from "../../components/BookCard";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -47,26 +48,7 @@ const BooksDiv = styled.View`
     flex-wrap: wrap;
     gap: 20px;
 `;
-const BookCard = styled.View`
 
-    flex-direction: row;
-
-    height: 90px;
-    width: 45%;
-    background-color: ${colors.generalColors.light};
-    border-radius: 8px;
-
-    overflow: hidden;
-    `;
-const BookColorBar = styled.View`
-    height: 100%;
-    width: 20px;
-    background-color: #ababab;
-    `;
-const BookInnerDiv = styled.View`
-    flex: 1;
-    padding: 5px 10px;
-    `;
 
 
 
@@ -142,7 +124,7 @@ const Collections: FunctionComponent = () => {
             recordId: 1,
             id: "book1",
             name: "book1",
-            color: "#ababab",
+            color: "red",
             isFavorite: false,
 
             isLocked: false,
@@ -156,13 +138,13 @@ const Collections: FunctionComponent = () => {
             recordId: 2,
             id: "book2",
             name: "Book 2",
-            color: "#ababab",
+            color: "green",
             isFavorite: false,
 
             isLocked: false,
 
             createdAt: new Date(),
-            updatedAt: new Date(),
+            updatedAt: new Date("2024-01-20"),
 
             pages: [],
         },
@@ -170,13 +152,13 @@ const Collections: FunctionComponent = () => {
             recordId: 3,
             id: "book2",
             name: "Book 2",
-            color: "#ababab",
+            color: "teal",
             isFavorite: false,
 
             isLocked: false,
 
             createdAt: new Date(),
-            updatedAt: new Date(),
+            updatedAt: new Date("2024-02-01"),
 
             pages: [],
         },
@@ -255,19 +237,28 @@ const Collections: FunctionComponent = () => {
                     </CollectionsDiv>
 
                     <OrderByBar />
+
                     <BooksDiv>
                         {books.map((book) => {
 
 
 
-                            return <BookCard key={`${book.recordId}-${book.createdAt}`}>
-                                <BookColorBar />
-                                <BookInnerDiv>
-                                    <BodyText textAlignment="left" text={book.name} />
-                                    <SubierText textAlignment="left" text="Tue 11:15am" />
-                                    <SubText textAlignment="left" text={`${book.pages.length} Pages`} />
-                                </BookInnerDiv>
-                            </BookCard>
+                            return <BookCard
+                                key={`${book.recordId}-${book.createdAt}`}
+                                collectionRef={book.collectionRef}
+                                recordId={book.recordId}
+                                id={book.id}
+                                name={book.name}
+                                color={book.color}
+                                isFavorite={book.isFavorite}
+                                isLocked={book.isLocked}
+                                lockType={book.lockType}
+                                password={book.password}
+                                pin={book.pin}
+                                updatedAt={book.updatedAt}
+                                createdAt={book.createdAt}
+                                pages={book.pages}
+                            />
                         })}
 
 
