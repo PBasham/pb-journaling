@@ -17,8 +17,6 @@ import { getRelativeDate } from "../../utilities/date-helpers";
 
 const BookCard: FC<Book> = (props: Book) => {
 
-    //TODO - Update my class with all properties
-
     const {
         collectionRef,
 
@@ -40,8 +38,6 @@ const BookCard: FC<Book> = (props: Book) => {
 
     } = props;
 
-    //TODO - Move me into date helper utilities -  FormatOnRelativeToToday?
-    //Format date depending on how long ago it's been updated.
     
     let formatedDate = getRelativeDate(updatedAt);
 

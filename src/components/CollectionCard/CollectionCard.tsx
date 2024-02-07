@@ -10,6 +10,7 @@ import { colors } from "../../assets";
 
 import { StyPressableArea, StyCollectionCard, StyCollectionColorBar, StyCollectionInnerDiv } from "./styles";
 import { Collection } from "../../interfaces/Collection";
+import { getRelativeDate } from "../../utilities/date-helpers";
 
 
 
@@ -38,25 +39,7 @@ const CollectionCard: FC<Collection> = (props: Collection) => {
 
     } = props;
 
-    //Format date depending on how long ago it's been updated.
-    const today = new Date();
-    
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1)
-    
-    let weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7)
-
-    let formatedDate: string = updatedAt.toLocaleDateString();
-    
-    if ( updatedAt.getDate() == today.getDate() ) {formatedDate = updatedAt.toLocaleTimeString()}
-    else if ( updatedAt > weekAgo ) {formatedDate = updatedAt.toDateString()}
-
-
-
-
-    // if (updatedAt.getDate() == today.getDate()) { formatedDate = updatedAt.toTimeString() }
-    // else if (updatedAt.getDate() < today.getDate() -7) { formatedDate = updatedAt.toDateString() }
+    let formatedDate = getRelativeDate(updatedAt);
 
         return <StyCollectionCard  >
             <StyPressableArea onPress={() => console.log("I've been pressed (CollectionCard)")} />
