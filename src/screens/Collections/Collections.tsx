@@ -240,9 +240,6 @@ const Collections: FunctionComponent = () => {
 
                     <BooksDiv>
                         {books.map((book) => {
-
-
-
                             return <BookCard
                                 key={`${book.recordId}-${book.createdAt}`}
                                 collectionRef={book.collectionRef}
