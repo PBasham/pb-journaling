@@ -8,8 +8,9 @@ import { HeaderThree } from "../text"
 import { StyOrderByBar } from "./styles"
 
 interface OrderByBarProps {
-    filterBy: "name" | "created" | "updated"
-    sortAsc: boolean
+    filterBy?: "name" | "createdAt" | "updatedAt"
+    sortAsc?: boolean
+    onPress: (sortBy: string, orderBy: boolean) => void
 }
 
 const OrderByBar: FC<OrderByBarProps> = (props: OrderByBarProps) => {
@@ -19,6 +20,8 @@ const OrderByBar: FC<OrderByBarProps> = (props: OrderByBarProps) => {
     const {
         filterBy: filter = "updated",
         sortAsc: sort = false,
+
+        onPress,
     } = props;
 
     const [filterBy, setFilterBy] = useState(filter)
@@ -26,7 +29,7 @@ const OrderByBar: FC<OrderByBarProps> = (props: OrderByBarProps) => {
 
     const handleChangeSortDir = () => {
         setSortAsc(!sortAsc);
-        //TODO - send this back to parent that holds sort direction and update list
+        onPress(filterBy, sortAsc)
     }
 
     return <StyOrderByBar>
