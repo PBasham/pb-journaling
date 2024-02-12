@@ -13,9 +13,11 @@ import { Book, Collection, Note } from "../../interfaces/Collection";
 import { Ionicons } from "@expo/vector-icons";
 import { CollectionCard } from "../../components/CollectionCard";
 
-import { OrderByBar } from "../../components/ui/OrderByBar";
+import { SortBar } from "../../components/ui/OrderByBar";
 import { BookCard } from "../../components/BookCard";
-import { OrderByObj } from "../../interfaces/OrderByBar";
+import { SortByOptions, SortingOptions } from "../../interfaces/OrderByBar";
+
+import useMyCollections from "./useCollections";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -28,8 +30,8 @@ const CollectionScreenContainer = styled.ScrollView`
 const CollectionScreenContainerInner = styled.View`
     gap: 20px;
 
-    padding-left: 20px;
-    padding-right: 20px;
+    /* padding-left: 20px;
+    padding-right: 20px; */
     //padding-top: 40px;
     padding-bottom: 40px;
 `;
@@ -37,6 +39,8 @@ const CollectionScreenContainerInner = styled.View`
 const CollectionsDiv = styled.View`
     gap: 20px;
 
+    padding-left: 20px;
+    padding-right: 20px;
     
     min-height: 80px;
     `;
@@ -48,6 +52,9 @@ const BooksDiv = styled.View`
     flex-direction: row;
     flex-wrap: wrap;
     gap: 20px;
+
+    padding-left: 20px;
+    padding-right: 20px;
 `;
 
 
@@ -57,6 +64,9 @@ const NotesDiv = styled.View`
     flex: 1;
 
     gap: 20px;
+
+    padding-left: 20px;
+    padding-right: 20px;
 `;
 
 const NoteCard = styled.View`
@@ -87,38 +97,7 @@ const DividerBar = styled.View`
 
 const Collections: FunctionComponent = () => {
 
-    const collections: Collection[] = [
-        {
-            recordId: 1,
-            id: "col1",
-            name: "Col 1",
-            color: "#fab70d",
-            isFavorite: false,
-            createdAt: new Date(),
-            updatedAt: new Date("2024-01-05"),
 
-            books: [],
-            notes: [],
-
-            isLocked: false,
-
-        },
-        {
-            recordId: 2,
-            id: "col1",
-            name: "Col 2",
-            color: null,
-            isFavorite: false,
-            createdAt: new Date(),
-            updatedAt: new Date("2024-02-01"),
-
-            books: [],
-            notes: [],
-
-            isLocked: false,
-
-        },
-    ];
 
     const books: Book[] = [
         {
@@ -209,14 +188,17 @@ const Collections: FunctionComponent = () => {
 
     //TODO - set up state for each sections Filter/sort order
 
-    const [myCollections, setMyCollections] = useState<Collection[]>([])
-    const [collectionsFilterBy, setCollectionsFilterBy] = useState<OrderByObj | null>(null);
+    const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
+
+
+
+
 
     const [myBooks, setMyBooks] = useState<Book[]>([])
-    const [booksFilterBy, setBooksFilterBy] = useState<OrderByObj | null>(null);
+    const [booksFilterBy, setBooksFilterBy] = useState<SortingOptions | null>(null);
 
 
-    const [notesFilterBy, setNotesFilterBy] = useState<OrderByObj | null>(null);
+    const [notesFilterBy, setNotesFilterBy] = useState<SortingOptions | null>(null);
 
     useEffect(() => {
         handleSetUpData()
@@ -225,19 +207,8 @@ const Collections: FunctionComponent = () => {
 
     const handleSetUpData = async () => {
 
-        let cFilter: OrderByObj = {
-            sortBy: "updatedAt",
-            sortAsc: true,
-        }
-        setCollectionsFilterBy(cFilter);
 
-
-        let sortedCollections = await handleSortCollections([...collections], cFilter.sortBy, cFilter.sortAsc)
-
-        setMyCollections(sortedCollections);
-        //--
-
-        let bFilter: OrderByObj = {
+        let bFilter: SortingOptions = {
             sortBy: "updatedAt",
             sortAsc: true,
         }
@@ -247,11 +218,10 @@ const Collections: FunctionComponent = () => {
 
         setMyBooks(sortedBooks);
         //--
-        let nFilter: OrderByObj = {
+        let nFilter: SortingOptions = {
             sortBy: "updatedAt",
             sortAsc: true,
         }
-        setCollectionsFilterBy(nFilter);
 
         //--
 
@@ -261,36 +231,10 @@ const Collections: FunctionComponent = () => {
     }
 
     const handleUpdateCollectionSortOrder = async (sortBy: string, sortAsc: boolean) => {
-        console.log("Entered handleUpdateCollectionSortOrder")
-        console.log(sortBy, " ", sortAsc)
-        let sortedCollections: Collection[] = await handleSortCollections([...myCollections], sortBy, sortAsc);
-        setMyCollections(sortedCollections);
+        sortMyCollections(myCollections, sortBy, sortAsc)
     }
 
-    const handleSortCollections = async (collections: Collection[], sortBy: string, sortAsc: boolean): Promise<Collection[]> => {
 
-        let sortedColleciton: Collection[] = [];
-
-        switch (sortBy) {
-            case "name":
-                if (sortAsc) { sortedColleciton = collections.sort((a, b) => a.name < b.name ? 1 : -1); }
-                else { sortedColleciton = collections.sort((a, b) => a.name > b.name ? 1 : -1); }
-                break;
-            case "createdAt":
-                if (sortAsc) { sortedColleciton = collections.sort((a, b) => a.createdAt < b.createdAt ? 1 : -1); }
-                else { sortedColleciton = collections.sort((a, b) => a.createdAt > b.createdAt ? 1 : -1); }
-                break;
-            case "updatedAt":
-                if (sortAsc) { sortedColleciton = collections.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-                else { sortedColleciton = collections.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-                break;
-            default:
-                if (sortAsc) { sortedColleciton = collections.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-                else { sortedColleciton = collections.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-                break;
-        }
-        return sortedColleciton;
-    }
 
     const handleUpdateMyBooksSortOrder = async (sortBy: string, sortAsc: boolean) => {
         console.log("Entered handleUpdateMyBooksSortOrder")
@@ -328,16 +272,15 @@ const Collections: FunctionComponent = () => {
 
     return (
         <>
-            <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} />
+            {/* <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} /> */}
+            <SafeAreaView edges={['top']} />
             <CollectionScreenContainer >
                 <CollectionScreenContainerInner>
-                    <OrderByBar filterBy={collectionsFilterBy?.sortBy} sortAsc={collectionsFilterBy?.sortAsc} onPress={handleUpdateCollectionSortOrder} />
+                <TopBar hasDotsButton />
+                    <SortBar sortBy={myCollectionSortBY} sortAsc={myCollectionSortAsc} sortOptions={collectionSortOptions} onPress={handleUpdateCollectionSortOrder} />
                     <CollectionsDiv>
 
                         {myCollections!.map((collection) => {
-
-
-
                             return <CollectionCard
                                 key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
                                 recordId={collection.recordId}
@@ -359,7 +302,7 @@ const Collections: FunctionComponent = () => {
 
                     </CollectionsDiv>
 
-                    <OrderByBar filterBy={collectionsFilterBy?.sortBy} sortAsc={collectionsFilterBy?.sortAsc} onPress={handleUpdateMyBooksSortOrder}/>
+                    <SortBar sortBy={booksFilterBy?.sortBy} sortAsc={booksFilterBy?.sortAsc} sortOptions={collectionSortOptions} onPress={handleUpdateMyBooksSortOrder} />
 
 
                     <BooksDiv>
@@ -385,7 +328,7 @@ const Collections: FunctionComponent = () => {
 
                     </BooksDiv>
 
-                    <OrderByBar filterBy={collectionsFilterBy?.sortBy} sortAsc={collectionsFilterBy?.sortAsc} onPress={() => console.log("Pressity press press")}/>
+                    <SortBar sortBy={notesFilterBy?.sortBy} sortAsc={notesFilterBy?.sortAsc} sortOptions={collectionSortOptions} onPress={() => console.log("Pressity press press")} />
 
 
                     <NotesDiv>

@@ -1,5 +1,5 @@
 import React, { FunctionComponent } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import styled from "styled-components/native";
 // components --------------------------------------------------
@@ -76,12 +76,22 @@ const TopBar: FunctionComponent<TopBarProps> = (props: TopBarProps) => {
 
     const TopBarContainer = styled.View`
     /* display: flex; */
+
+
+
+    /* margin-top: 100px; */
+
+    /* z-index: 999; */
+    
+
     flex-direction: row;
     align-items: center;
     /* gap: 10px; */
     
     height: 50px;
     width: 100%;
+    
+
     padding-left: 10px;
     padding-right: 10px;
     /* padding-top: 10px; */
@@ -134,7 +144,8 @@ const TopBar: FunctionComponent<TopBarProps> = (props: TopBarProps) => {
 
     return (
         <>
-                <TopBarContainer >
+        {/* <SafeAreaView edges={["top"]} /> */}
+                <TopBarContainer>
                     {hasBackButton ?
                         <BackBtnContainer>
                             <Ionicons

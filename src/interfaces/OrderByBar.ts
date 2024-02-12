@@ -1,6 +1,7 @@
-export interface OrderByObj {
-    sortBy: filterByOptions
+export interface SortingOptions {
+    sortBy: SortByOptions
     sortAsc: boolean
 }
 
-export type  filterByOptions = "name" | "createdAt" | "updatedAt"
+export type  SortByOptions = "name" | "createdAt" | "updatedAt"
+export type  SortByDisplayedOptions = "Name" | "Created" | "Updated"
