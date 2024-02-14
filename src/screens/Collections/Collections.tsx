@@ -241,6 +241,7 @@ const Collections: FunctionComponent = () => {
         let sortedBooks: Book[] = await handleSortBooks([...myBooks], sortBy, sortAsc);
         setMyBooks(sortedBooks);
     }
+
     const handleSortBooks = async (books: Book[], sortBy: string, sortAsc: boolean): Promise<Book[]> => {
 
         let sortedBooks: Book[] = [];
@@ -265,7 +266,37 @@ const Collections: FunctionComponent = () => {
         }
         return sortedBooks;
     }
+    //LEFT-OFF set up function for sorting notes
+    // const handleUpdateMyBooksSortOrder = async (sortBy: string, sortAsc: boolean) => {
+    //     console.log("Entered handleUpdateMyBooksSortOrder")
+    //     let sortedBooks: Book[] = await handleSortBooks([...myBooks], sortBy, sortAsc);
+    //     setMyBooks(sortedBooks);
+    // }
+    
+    // const handleSortBooks = async (books: Book[], sortBy: string, sortAsc: boolean): Promise<Book[]> => {
 
+    //     let sortedBooks: Book[] = [];
+
+    //     switch (sortBy) {
+    //         case "name":
+    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.name < b.name ? 1 : -1); }
+    //             else { sortedBooks = books.sort((a, b) => a.name > b.name ? 1 : -1); }
+    //             break;
+    //         case "createdAt":
+    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.createdAt < b.createdAt ? 1 : -1); }
+    //             else { sortedBooks = books.sort((a, b) => a.createdAt > b.createdAt ? 1 : -1); }
+    //             break;
+    //         case "updatedAt":
+    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
+    //             else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
+    //             break;
+    //         default:
+    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
+    //             else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
+    //             break;
+    //     }
+    //     return sortedBooks;
+    // }
 
     //TODO - Set up functions to handle that state change, and update async storage with new filter/sort order type for section
 
@@ -276,8 +307,15 @@ const Collections: FunctionComponent = () => {
             <SafeAreaView edges={['top']} />
             <CollectionScreenContainer >
                 <CollectionScreenContainerInner>
-                <TopBar hasDotsButton />
-                    <SortBar sortBy={myCollectionSortBY} sortAsc={myCollectionSortAsc} sortOptions={collectionSortOptions} onPress={handleUpdateCollectionSortOrder} />
+                    <TopBar hasDotsButton />
+                    <SortBar
+                        sortBy={myCollectionSortBY}
+                        sortAsc={myCollectionSortAsc}
+                        sortOptions={collectionSortOptions}
+                        header="Collections"
+
+                        onPress={handleUpdateCollectionSortOrder}
+                    />
                     <CollectionsDiv>
 
                         {myCollections!.map((collection) => {
@@ -302,7 +340,14 @@ const Collections: FunctionComponent = () => {
 
                     </CollectionsDiv>
 
-                    <SortBar sortBy={booksFilterBy?.sortBy} sortAsc={booksFilterBy?.sortAsc} sortOptions={collectionSortOptions} onPress={handleUpdateMyBooksSortOrder} />
+                    <SortBar
+                        sortBy={booksFilterBy?.sortBy}
+                        sortAsc={booksFilterBy?.sortAsc}
+                        sortOptions={collectionSortOptions}
+                        header="Books"
+
+                        onPress={handleUpdateMyBooksSortOrder}
+                    />
 
 
                     <BooksDiv>
@@ -328,7 +373,14 @@ const Collections: FunctionComponent = () => {
 
                     </BooksDiv>
 
-                    <SortBar sortBy={notesFilterBy?.sortBy} sortAsc={notesFilterBy?.sortAsc} sortOptions={collectionSortOptions} onPress={() => console.log("Pressity press press")} />
+                    <SortBar
+                        sortBy={notesFilterBy?.sortBy}
+                        sortAsc={notesFilterBy?.sortAsc}
+                        sortOptions={collectionSortOptions}
+                        header="Notes"
+
+                        onPress={() => console.log("Pressity press press")}
+                    />
 
 
                     <NotesDiv>
