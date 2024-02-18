@@ -115,7 +115,9 @@ const Collections: FunctionComponent = () => {
     const handleUpdateMyBooksSortOrder = async (sortBy: string, sortAsc: boolean) => {
         sortMyBooks(myBooks, sortBy, sortAsc)
     }
-
+    const handleUpdateMyNotesSortOrder = async (sortBy: string, sortAsc: boolean) => {
+        sortMyNotes(myNotes, sortBy, sortAsc)
+    }
     //TODO - Set up functions to handle that state change, and update async storage with new filter/sort order type for section
 
 
@@ -190,7 +192,7 @@ const Collections: FunctionComponent = () => {
                         sortOptions={noteSortOptions}
                         header="Notes"
 
-                        onPress={() => console.log("Pressity press press")}
+                        onPress={handleUpdateMyNotesSortOrder}
                     />
 
 
