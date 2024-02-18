@@ -11,14 +11,13 @@ import { colors, generalColors, textColors } from "../../assets";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Book, Collection, Note } from "../../interfaces/Collection";
 import { Ionicons } from "@expo/vector-icons";
-import { CollectionCard } from "../../components/CollectionCard";
 
 import { SortHeaderBar } from "../../components/ui/OrderByBar";
-import { BookCard } from "../../components/BookCard";
 import { SortByOptions, SortingOptions } from "../../interfaces/OrderByBar";
 
 import { useMyBooks, useMyCollections } from "../../hooks";
 import { useMyNotes } from "../../hooks/useMyNotes";
+import { CollectionCard, BookCard, NoteCard } from "../../components";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -70,16 +69,7 @@ const NotesDiv = styled.View`
     padding-right: 20px;
 `;
 
-const NoteCard = styled.View`
-    padding: 5px 10px;
 
-    height: 90px;
-    width: 100%;
-    background-color: ${colors.generalColors.light};
-    border-radius: 8px;
-
-    overflow: hidden;
-    `;
 
 const NoteInnerDiv = styled.View`
     flex: 1;
@@ -205,11 +195,25 @@ const Collections: FunctionComponent = () => {
 
 
                     <NotesDiv children={myNotes.map((note) => {
-                            return <NoteCard key={`${note.id}-${note.createdAt}`}>
-                                <BodyText textAlignment="left" text={note.title} />
-                                <SubierText textAlignment="left" text={`${note.updatedAt.toDateString()}`} />
-                                <SubText lines={1} textStyles={{ marginTop: "auto", marginBottom: "auto" }} textAlignment="left" text={note.text} />
-                            </NoteCard>
+                            return <NoteCard 
+                                key={`${note.id}-${note.createdAt}`}
+                                collectionRef={note.collectionRef}
+    bookRef={note.bookRef}
+    recordId={note.recordId}
+    id={note.id}
+    title={note.title}
+    feeling={note.feeling}
+    text={note.text}
+    color={note.color}
+    isFavorite={note.isFavorite}
+    isLocked={note.isLocked}
+    lockType={note.lockType}
+    password={note.password}
+    pin={note.pin}
+    createdAt={note.createdAt}
+    updatedAt={note.updatedAt}
+
+                            />
                         })}
                     />
                 </CollectionScreenContainerInner>
