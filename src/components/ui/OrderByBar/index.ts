@@ -1,1 +1,1 @@
-export {default as SortBar} from "./OrderByBar"
+export {default as SortHeaderBar} from "./OrderByBar"

@@ -13,11 +13,11 @@ import { Book, Collection, Note } from "../../interfaces/Collection";
 import { Ionicons } from "@expo/vector-icons";
 import { CollectionCard } from "../../components/CollectionCard";
 
-import { SortBar } from "../../components/ui/OrderByBar";
+import { SortHeaderBar } from "../../components/ui/OrderByBar";
 import { BookCard } from "../../components/BookCard";
 import { SortByOptions, SortingOptions } from "../../interfaces/OrderByBar";
 
-import useMyCollections from "./useCollections";
+import { useMyBooks, useMyCollections } from "../../hooks";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -99,51 +99,7 @@ const Collections: FunctionComponent = () => {
 
 
 
-    const books: Book[] = [
-        {
-            recordId: 1,
-            id: "book1",
-            name: "book1",
-            color: "red",
-            isFavorite: false,
 
-            isLocked: false,
-
-            createdAt: new Date(),
-            updatedAt: new Date(),
-
-            pages: [],
-        },
-        {
-            recordId: 2,
-            id: "book2",
-            name: "Book 2",
-            color: "green",
-            isFavorite: false,
-
-            isLocked: false,
-
-            createdAt: new Date(),
-            updatedAt: new Date("2024-01-20"),
-
-            pages: [],
-        },
-        {
-            recordId: 3,
-            id: "book2",
-            name: "Book 2",
-            color: "teal",
-            isFavorite: false,
-
-            isLocked: false,
-
-            createdAt: new Date(),
-            updatedAt: new Date("2024-02-01"),
-
-            pages: [],
-        },
-
-    ]
     const notes: Note[] = [
         {
             collectionRef: null,
@@ -190,11 +146,13 @@ const Collections: FunctionComponent = () => {
 
     const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
 
+    const [myBooks, myBookSortBY, bookSortOptions, myBookSortAsc, addBook, removeBook, updateBook, sortMyBooks] = useMyBooks()
 
 
 
 
-    const [myBooks, setMyBooks] = useState<Book[]>([])
+
+
     const [booksFilterBy, setBooksFilterBy] = useState<SortingOptions | null>(null);
 
 
@@ -205,98 +163,15 @@ const Collections: FunctionComponent = () => {
 
     }, [])
 
-    const handleSetUpData = async () => {
-
-
-        let bFilter: SortingOptions = {
-            sortBy: "updatedAt",
-            sortAsc: true,
-        }
-
-        setBooksFilterBy(bFilter);
-        let sortedBooks = await handleSortBooks([...books], bFilter.sortBy, bFilter.sortAsc)
-
-        setMyBooks(sortedBooks);
-        //--
-        let nFilter: SortingOptions = {
-            sortBy: "updatedAt",
-            sortAsc: true,
-        }
-
-        //--
-
-
-
-
-    }
+    const handleSetUpData = async () => {}
 
     const handleUpdateCollectionSortOrder = async (sortBy: string, sortAsc: boolean) => {
         sortMyCollections(myCollections, sortBy, sortAsc)
     }
 
-
-
     const handleUpdateMyBooksSortOrder = async (sortBy: string, sortAsc: boolean) => {
-        console.log("Entered handleUpdateMyBooksSortOrder")
-        let sortedBooks: Book[] = await handleSortBooks([...myBooks], sortBy, sortAsc);
-        setMyBooks(sortedBooks);
+        sortMyBooks(myBooks, sortBy, sortAsc)
     }
-
-    const handleSortBooks = async (books: Book[], sortBy: string, sortAsc: boolean): Promise<Book[]> => {
-
-        let sortedBooks: Book[] = [];
-
-        switch (sortBy) {
-            case "name":
-                if (sortAsc) { sortedBooks = books.sort((a, b) => a.name < b.name ? 1 : -1); }
-                else { sortedBooks = books.sort((a, b) => a.name > b.name ? 1 : -1); }
-                break;
-            case "createdAt":
-                if (sortAsc) { sortedBooks = books.sort((a, b) => a.createdAt < b.createdAt ? 1 : -1); }
-                else { sortedBooks = books.sort((a, b) => a.createdAt > b.createdAt ? 1 : -1); }
-                break;
-            case "updatedAt":
-                if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-                else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-                break;
-            default:
-                if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-                else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-                break;
-        }
-        return sortedBooks;
-    }
-    //LEFT-OFF set up function for sorting notes
-    // const handleUpdateMyBooksSortOrder = async (sortBy: string, sortAsc: boolean) => {
-    //     console.log("Entered handleUpdateMyBooksSortOrder")
-    //     let sortedBooks: Book[] = await handleSortBooks([...myBooks], sortBy, sortAsc);
-    //     setMyBooks(sortedBooks);
-    // }
-    
-    // const handleSortBooks = async (books: Book[], sortBy: string, sortAsc: boolean): Promise<Book[]> => {
-
-    //     let sortedBooks: Book[] = [];
-
-    //     switch (sortBy) {
-    //         case "name":
-    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.name < b.name ? 1 : -1); }
-    //             else { sortedBooks = books.sort((a, b) => a.name > b.name ? 1 : -1); }
-    //             break;
-    //         case "createdAt":
-    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.createdAt < b.createdAt ? 1 : -1); }
-    //             else { sortedBooks = books.sort((a, b) => a.createdAt > b.createdAt ? 1 : -1); }
-    //             break;
-    //         case "updatedAt":
-    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-    //             else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-    //             break;
-    //         default:
-    //             if (sortAsc) { sortedBooks = books.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1); }
-    //             else { sortedBooks = books.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1); }
-    //             break;
-    //     }
-    //     return sortedBooks;
-    // }
 
     //TODO - Set up functions to handle that state change, and update async storage with new filter/sort order type for section
 
@@ -308,7 +183,7 @@ const Collections: FunctionComponent = () => {
             <CollectionScreenContainer >
                 <CollectionScreenContainerInner>
                     <TopBar hasDotsButton />
-                    <SortBar
+                    <SortHeaderBar
                         sortBy={myCollectionSortBY}
                         sortAsc={myCollectionSortAsc}
                         sortOptions={collectionSortOptions}
@@ -340,9 +215,9 @@ const Collections: FunctionComponent = () => {
 
                     </CollectionsDiv>
 
-                    <SortBar
-                        sortBy={booksFilterBy?.sortBy}
-                        sortAsc={booksFilterBy?.sortAsc}
+                    <SortHeaderBar
+                        sortBy={myBookSortBY}
+                        sortAsc={myBookSortAsc}
                         sortOptions={collectionSortOptions}
                         header="Books"
 
@@ -373,7 +248,7 @@ const Collections: FunctionComponent = () => {
 
                     </BooksDiv>
 
-                    <SortBar
+                    <SortHeaderBar
                         sortBy={notesFilterBy?.sortBy}
                         sortAsc={notesFilterBy?.sortAsc}
                         sortOptions={collectionSortOptions}

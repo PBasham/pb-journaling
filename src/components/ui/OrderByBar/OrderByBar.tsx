@@ -10,7 +10,7 @@ import { SortByOptions } from "../../../interfaces/OrderByBar"
 import styled from "styled-components/native"
 import { colors } from "../../../assets"
 
-interface OrderByBarProps {
+interface SortHeaderBarProps {
     sortBy?: string
     sortAsc?: boolean
     sortOptions: { [key: string]: any }
@@ -21,7 +21,7 @@ interface OrderByBarProps {
     onPress: (sortBy: string, orderBy: boolean) => void
 }
 
-const SortBar: FC<OrderByBarProps> = (props: OrderByBarProps) => {
+const SortHeaderBar: FC<SortHeaderBarProps> = (props: SortHeaderBarProps) => {
 
     const {
         sortBy = "updatedAt",
@@ -118,4 +118,4 @@ const SortBar: FC<OrderByBarProps> = (props: OrderByBarProps) => {
     </>
 }
 
-export default SortBar;
+export default SortHeaderBar;
