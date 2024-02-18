@@ -18,6 +18,7 @@ import { BookCard } from "../../components/BookCard";
 import { SortByOptions, SortingOptions } from "../../interfaces/OrderByBar";
 
 import { useMyBooks, useMyCollections } from "../../hooks";
+import { useMyNotes } from "../../hooks/useMyNotes";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -97,66 +98,18 @@ const DividerBar = styled.View`
 
 const Collections: FunctionComponent = () => {
 
-
-
-
-    const notes: Note[] = [
-        {
-            collectionRef: null,
-            bookRef: null,
-
-            recordId: 1,
-            id: "note1",
-
-            color: "",
-            title: "book1",
-            feeling: "feeling",
-            text: "Ipsum Lorim isffe Lorim isffe Lorim isffe Lorim isffe Lorim isffe ",
-
-            isFavorite: false,
-            isLocked: false,
-
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-        {
-            collectionRef: null,
-            bookRef: null,
-
-            recordId: 2,
-            id: "note2",
-
-            color: "",
-            title: "book1",
-            feeling: "feeling",
-            text: "Ipsum Lorim isffe Lorim isffe Lorim isffe Lorim isffe Lorim isffe ",
-
-            isFavorite: false,
-            isLocked: false,
-
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-
-
-    ]
-
-
     //TODO - set up state for each sections Filter/sort order
 
     const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
 
     const [myBooks, myBookSortBY, bookSortOptions, myBookSortAsc, addBook, removeBook, updateBook, sortMyBooks] = useMyBooks()
 
+    const [ myNotes, myNoteSortBY, noteSortOptions, myNoteSortAsc, addNote, removeNote, updateNote, sortMyNotes ] = useMyNotes()
 
 
 
 
-
-    const [booksFilterBy, setBooksFilterBy] = useState<SortingOptions | null>(null);
-
-
-    const [notesFilterBy, setNotesFilterBy] = useState<SortingOptions | null>(null);
+    
 
     useEffect(() => {
         handleSetUpData()
@@ -191,9 +144,7 @@ const Collections: FunctionComponent = () => {
 
                         onPress={handleUpdateCollectionSortOrder}
                     />
-                    <CollectionsDiv>
-
-                        {myCollections!.map((collection) => {
+                    <CollectionsDiv children={myCollections!.map((collection) => {
                             return <CollectionCard
                                 key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
                                 recordId={collection.recordId}
@@ -211,22 +162,19 @@ const Collections: FunctionComponent = () => {
                                 notes={collection.notes}
                             />
                         })}
-
-
-                    </CollectionsDiv>
+                    />
 
                     <SortHeaderBar
                         sortBy={myBookSortBY}
                         sortAsc={myBookSortAsc}
-                        sortOptions={collectionSortOptions}
+                        sortOptions={bookSortOptions}
                         header="Books"
 
                         onPress={handleUpdateMyBooksSortOrder}
                     />
 
 
-                    <BooksDiv>
-                        {myBooks.map((book) => {
+                    <BooksDiv children={myBooks.map((book) => {
                             return <BookCard
                                 key={`${book.recordId}-${book.createdAt}`}
                                 collectionRef={book.collectionRef}
@@ -243,30 +191,27 @@ const Collections: FunctionComponent = () => {
                                 createdAt={book.createdAt}
                                 pages={book.pages}
                             />
-                        })}
+                        })} />
 
-
-                    </BooksDiv>
 
                     <SortHeaderBar
-                        sortBy={notesFilterBy?.sortBy}
-                        sortAsc={notesFilterBy?.sortAsc}
-                        sortOptions={collectionSortOptions}
+                        sortBy={myNoteSortBY}
+                        sortAsc={myNoteSortAsc}
+                        sortOptions={noteSortOptions}
                         header="Notes"
 
                         onPress={() => console.log("Pressity press press")}
                     />
 
 
-                    <NotesDiv>
-                        {notes.map((note) => {
+                    <NotesDiv children={myNotes.map((note) => {
                             return <NoteCard key={`${note.id}-${note.createdAt}`}>
                                 <BodyText textAlignment="left" text={note.title} />
                                 <SubierText textAlignment="left" text={`${note.updatedAt.toDateString()}`} />
                                 <SubText lines={1} textStyles={{ marginTop: "auto", marginBottom: "auto" }} textAlignment="left" text={note.text} />
                             </NoteCard>
                         })}
-                    </NotesDiv>
+                    />
                 </CollectionScreenContainerInner>
             </CollectionScreenContainer>
         </>

@@ -28,14 +28,10 @@ const useMyBooks = (): [
     //todo hold state for filtering
     const [myBooks, setMyBooks] = useState<Book[]>([])
     const [myBookSortBY, setMyBookSortBY] = useState<string>("updatedAt")
-    const [myBookDisplayedSortBy, setMyBookDisplayedSortBy] = useState("Updated")
     const [myBookSortAsc, setMyBookSortAsc] = useState<boolean>(false)
 
 
     async function sortMyBooks(Books: Book[], sortBy: string, sortAsc: boolean) {
-
-        console.log(`sortBy: ${sortBy}\nsortAsc: ${sortAsc}`)
-
         let sortedCollecitons: Book[] = []
 
         switch (sortBy) {

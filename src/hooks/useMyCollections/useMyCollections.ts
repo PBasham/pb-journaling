@@ -28,13 +28,10 @@ const useMyCollections = (): [
     //todo hold state for filtering
     const [myCollections, setMyCollections] = useState<Collection[]>([])
     const [myCollectionSortBY, setMyCollectionSortBY] = useState<string>("updatedAt")
-    const [myCollectionDisplayedSortBy, setMyCollectionDisplayedSortBy] = useState("Updated")
     const [myCollectionSortAsc, setMyCollectionSortAsc] = useState<boolean>(false)
 
 
     async function sortMyCollections(collections: Collection[], sortBy: string, sortAsc: boolean) {
-
-        console.log(`sortBy: ${sortBy}\nsortAsc: ${sortAsc}`)
 
         let sortedCollecitons: Collection[] = []
 
