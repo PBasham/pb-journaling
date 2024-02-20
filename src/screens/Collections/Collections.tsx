@@ -18,6 +18,7 @@ import { SortByOptions, SortingOptions } from "../../interfaces/OrderByBar";
 import { useMyBooks, useMyCollections } from "../../hooks";
 import { useMyNotes } from "../../hooks/useMyNotes";
 import { CollectionCard, BookCard, NoteCard } from "../../components";
+import { RoundIconBtn } from "../../components/ui/buttons";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -27,7 +28,7 @@ const CollectionScreenContainer = styled.ScrollView`
     height: 100%; */
     background-color: ${colors.generalColors.background};
 `;
-const CollectionScreenContainerInner = styled.View`
+const CollectionScreenContainerInner = styled.ScrollView`
     gap: 20px;
 
     /* padding-left: 20px;
@@ -85,7 +86,6 @@ const DividerBar = styled.View`
 
 
 
-
 const Collections: FunctionComponent = () => {
 
     //TODO - set up state for each sections Filter/sort order
@@ -94,19 +94,19 @@ const Collections: FunctionComponent = () => {
 
     const [myBooks, myBookSortBY, bookSortOptions, myBookSortAsc, addBook, removeBook, updateBook, sortMyBooks] = useMyBooks()
 
-    const [ myNotes, myNoteSortBY, noteSortOptions, myNoteSortAsc, addNote, removeNote, updateNote, sortMyNotes ] = useMyNotes()
+    const [myNotes, myNoteSortBY, noteSortOptions, myNoteSortAsc, addNote, removeNote, updateNote, sortMyNotes] = useMyNotes()
 
 
 
 
-    
+
 
     useEffect(() => {
         handleSetUpData()
 
     }, [])
 
-    const handleSetUpData = async () => {}
+    const handleSetUpData = async () => { }
 
     const handleUpdateCollectionSortOrder = async (sortBy: string, sortAsc: boolean) => {
         sortMyCollections(myCollections, sortBy, sortAsc)
@@ -127,6 +127,7 @@ const Collections: FunctionComponent = () => {
             <SafeAreaView edges={['top']} />
             <CollectionScreenContainer >
                 <CollectionScreenContainerInner>
+                
                     <TopBar hasDotsButton />
                     <SortHeaderBar
                         sortBy={myCollectionSortBY}
@@ -137,23 +138,23 @@ const Collections: FunctionComponent = () => {
                         onPress={handleUpdateCollectionSortOrder}
                     />
                     <CollectionsDiv children={myCollections!.map((collection) => {
-                            return <CollectionCard
-                                key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
-                                recordId={collection.recordId}
-                                id={collection.id}
-                                name={collection.name}
-                                color={collection.color}
-                                isFavorite={collection.isFavorite}
-                                isLocked={collection.isLocked}
-                                lockType={collection.lockType}
-                                password={collection.password}
-                                pin={collection.pin}
-                                createdAt={collection.createdAt}
-                                updatedAt={collection.updatedAt}
-                                books={collection.books}
-                                notes={collection.notes}
-                            />
-                        })}
+                        return <CollectionCard
+                            key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
+                            recordId={collection.recordId}
+                            id={collection.id}
+                            name={collection.name}
+                            color={collection.color}
+                            isFavorite={collection.isFavorite}
+                            isLocked={collection.isLocked}
+                            lockType={collection.lockType}
+                            password={collection.password}
+                            pin={collection.pin}
+                            createdAt={collection.createdAt}
+                            updatedAt={collection.updatedAt}
+                            books={collection.books}
+                            notes={collection.notes}
+                        />
+                    })}
                     />
 
                     <SortHeaderBar
@@ -167,23 +168,23 @@ const Collections: FunctionComponent = () => {
 
 
                     <BooksDiv children={myBooks.map((book) => {
-                            return <BookCard
-                                key={`${book.recordId}-${book.createdAt}`}
-                                collectionRef={book.collectionRef}
-                                recordId={book.recordId}
-                                id={book.id}
-                                name={book.name}
-                                color={book.color}
-                                isFavorite={book.isFavorite}
-                                isLocked={book.isLocked}
-                                lockType={book.lockType}
-                                password={book.password}
-                                pin={book.pin}
-                                updatedAt={book.updatedAt}
-                                createdAt={book.createdAt}
-                                pages={book.pages}
-                            />
-                        })} />
+                        return <BookCard
+                            key={`${book.recordId}-${book.createdAt}`}
+                            collectionRef={book.collectionRef}
+                            recordId={book.recordId}
+                            id={book.id}
+                            name={book.name}
+                            color={book.color}
+                            isFavorite={book.isFavorite}
+                            isLocked={book.isLocked}
+                            lockType={book.lockType}
+                            password={book.password}
+                            pin={book.pin}
+                            updatedAt={book.updatedAt}
+                            createdAt={book.createdAt}
+                            pages={book.pages}
+                        />
+                    })} />
 
 
                     <SortHeaderBar
@@ -197,29 +198,33 @@ const Collections: FunctionComponent = () => {
 
 
                     <NotesDiv children={myNotes.map((note) => {
-                            return <NoteCard 
-                                key={`${note.id}-${note.createdAt}`}
-                                collectionRef={note.collectionRef}
-    bookRef={note.bookRef}
-    recordId={note.recordId}
-    id={note.id}
-    title={note.title}
-    feeling={note.feeling}
-    text={note.text}
-    color={note.color}
-    isFavorite={note.isFavorite}
-    isLocked={note.isLocked}
-    lockType={note.lockType}
-    password={note.password}
-    pin={note.pin}
-    createdAt={note.createdAt}
-    updatedAt={note.updatedAt}
+                        return <NoteCard
+                            key={`${note.id}-${note.createdAt}`}
+                            collectionRef={note.collectionRef}
+                            bookRef={note.bookRef}
+                            recordId={note.recordId}
+                            id={note.id}
+                            title={note.title}
+                            feeling={note.feeling}
+                            text={note.text}
+                            color={note.color}
+                            isFavorite={note.isFavorite}
+                            isLocked={note.isLocked}
+                            lockType={note.lockType}
+                            password={note.password}
+                            pin={note.pin}
+                            createdAt={note.createdAt}
+                            updatedAt={note.updatedAt}
 
-                            />
-                        })}
+                        />
+                    })}
                     />
                 </CollectionScreenContainerInner>
             </CollectionScreenContainer>
+            <RoundIconBtn
+                antIconName="plus"
+                    onPress={() => console.log("RoundIconBtn has been pressed")}
+                />
         </>
     )
 }
