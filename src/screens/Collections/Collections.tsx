@@ -91,7 +91,7 @@ const Collections: FunctionComponent = () => {
 
     //TODO - set up state for each sections Filter/sort order
 
-    const [ isScrollEnabled, setIsScrollEnabled ] = useState<boolean>(true)
+    const [isScrollEnabled, setIsScrollEnabled] = useState<boolean>(true)
 
     const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
 
@@ -126,17 +126,24 @@ const Collections: FunctionComponent = () => {
     const handleDisableScroll = () => [setIsScrollEnabled(false)]
     const handleEnableScroll = () => [setIsScrollEnabled(true)]
 
+    const [isAddCollectionModalOpen, setIsAddCollectionModalOpen] = useState<boolean>(false)
+    const showAddCollectionModal = () => { setIsAddCollectionModalOpen(true) }
+    const hideAddCollectionModal = () => {
+        //* Hide modal and reset values.
+        setIsAddCollectionModalOpen(false)
+
+    }
 
     return (
         <>
             {/* <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} /> */}
             <SafeAreaView edges={['top']} />
-            <AddCollectionModal />
-            <CollectionScreenContainer 
+            <AddCollectionModal isModalOpen={isAddCollectionModalOpen} closeModal={hideAddCollectionModal}/>
+            <CollectionScreenContainer
                 scrollEnabled={isScrollEnabled}
             >
                 <CollectionScreenContainerInner>
-                
+
                     <TopBar hasDotsButton />
                     <SortHeaderBar
                         sortBy={myCollectionSortBY}
@@ -210,7 +217,7 @@ const Collections: FunctionComponent = () => {
 
                         handleEnableScroll={handleEnableScroll}
                         handleDisableScroll={handleDisableScroll}
-                        
+
                         onPress={handleUpdateMyNotesSortOrder}
                     />
 
@@ -241,8 +248,8 @@ const Collections: FunctionComponent = () => {
             </CollectionScreenContainer>
             <RoundIconBtn
                 antIconName="plus"
-                    onPress={() => console.log("RoundIconBtn has been pressed")}
-                />
+                onPress={showAddCollectionModal}
+            />
         </>
     )
 }

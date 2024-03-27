@@ -1,78 +1,38 @@
 /*========================================
         Import Dependencies
 ========================================*/
-import React, { FC, useState } from 'react'
-import { View, StyleSheet, Modal, TextInput } from 'react-native'
-import styled from "styled-components/native"
+import React, { FC, useEffect, useState } from 'react'
+import { Modal } from 'react-native'
 import { colors } from "../../../assets"
-import { BodyText, HeaderThree, HeaderTwo, SubText } from "../../ui/text"
+import { HeaderThree, HeaderTwo } from "../../ui/text"
 import { StandardTextInput } from "../../ui"
 import { ColorOption } from "./ColorOption"
+import {
+    StyFloatBoxInner,
+    StyModalFloatBox,
+    StyModalFloatBoxHeader,
+    StyModalFloatBoxColorsDiv,
+    StyModalFloatBoxBtnsDiv,
+    StyModalFloatBoxBtn
+} from "./styles"
+
 
 interface AddCollectionModalProps {
-
+    isModalOpen: boolean
+    closeModal: () => void
 }
 
-const StyFloatBoxModal = styled.Modal`
-    
-`
-
-const StyFloatBoxInner = styled.View`
-    flex: 1;
-
-    justify-content: center;
-    align-items: center;
-
-    background-color: #00000030;
-    `
-const StyModalFloatBox = styled.View`
-    padding: 10px;
-    width: 80%;
-
-    background-color: #616060;
-    border-radius: 5px;
-
-    z-index: 999;
-    `
-const StyModalFloatBoxHeader = styled.View`
-    min-height: 10px;
-    padding: 10px 0;
-    /* border-bottom-width: 2px;
-    border-bottom-color: white; */
-`
-const StyModalFloatBoxColorsDiv = styled.View`
-position: relative;
-flex-direction: row;
-flex-wrap: wrap;
-/* justify-content: center; */
-align-items: center;
-gap: 20px;
-
-min-height: 10px;
-min-width: 80%;
-margin-top: 20px;
-margin-bottom: 10px;
-padding: 10px;
-/* background-color: wheat; */
-
-`
 
 
-const StyModalFloatBoxBtnsDiv = styled.View`
-    flex-direction: row;
+const AddCollectionModal: FC<AddCollectionModalProps> = (props: AddCollectionModalProps) => {
 
-`
-const StyModalFloatBoxBtn = styled.Pressable`
-    padding: 10px;
-    width: 50%;
-`
+    // const [isModalOpen, setIsModalOpen] = useState<boolean>(true)
 
-
-const AddCollectionModal: FC<AddCollectionModalProps> = ({ }) => {
-
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(true)
+    const { isModalOpen, closeModal } = props
 
     const [selectedColor, setSelectedColor] = useState<string>("")
+
+    const [newCollectionName, setNewCollectionName] = useState<string>("")
 
     const colorOptions: string[] = [
         "white",
@@ -89,6 +49,25 @@ const AddCollectionModal: FC<AddCollectionModalProps> = ({ }) => {
         "pink",
     ]
 
+    useEffect(() => {
+        setSelectedColor("")
+    }, [isModalOpen])
+
+    const collectionNameTextChange = (collectionName: string) => {
+        setNewCollectionName(collectionName)
+    }
+
+    const handleCreatePress = () => {
+        // name
+        let hasValidName: boolean = !(newCollectionName === "")
+        console.log(newCollectionName === "" ? "Need name" : newCollectionName)
+        // color
+        let hasValidColor: boolean = !(selectedColor === "")
+        console.log(selectedColor === "" ? "Need color" : selectedColor)
+
+        let isValid: boolean = hasValidName && hasValidColor
+        if (isValid) { console.log("Can create!") }
+    }
 
     return (
         <Modal
@@ -102,18 +81,18 @@ const AddCollectionModal: FC<AddCollectionModalProps> = ({ }) => {
                     <HeaderTwo text="Create Collection" textAlignment="left" textColor="white" />
                     <StyModalFloatBoxHeader>
                         {/* Put text input here */}
-                        <StandardTextInput />
+                        <StandardTextInput placeholderText={`"collection name"`} placeholderColor="#ddd" onChangeText={collectionNameTextChange} />
                     </StyModalFloatBoxHeader>
                     <HeaderTwo text="Color" textColor={colors.textColors.light} textAlignment="left" />
                     <StyModalFloatBoxColorsDiv>
                         {colorOptions.map((color, idx) => {
-                            
-                            return <ColorOption key={`${idx}-${color}`} color={color} selectedColor={selectedColor} setSelectedColor={setSelectedColor}/>
+
+                            return <ColorOption key={`${idx}-${color}`} color={color} selectedColor={selectedColor} setSelectedColor={setSelectedColor} />
                         })}
                     </StyModalFloatBoxColorsDiv>
                     <StyModalFloatBoxBtnsDiv>
-                        <StyModalFloatBoxBtn><HeaderThree text="Cancel" textColor="#e8e8e8" /></StyModalFloatBoxBtn>
-                        <StyModalFloatBoxBtn><HeaderThree text="Create" textColor="#e8e8e8" /></StyModalFloatBoxBtn>
+                        <StyModalFloatBoxBtn><HeaderThree text="Cancel" textColor="#e8e8e8" onPress={() => closeModal()} /></StyModalFloatBoxBtn>
+                        <StyModalFloatBoxBtn><HeaderThree text="Create" textColor="#e8e8e8" onPress={() => handleCreatePress()} /></StyModalFloatBoxBtn>
                     </StyModalFloatBoxBtnsDiv>
                 </StyModalFloatBox>
             </StyFloatBoxInner>

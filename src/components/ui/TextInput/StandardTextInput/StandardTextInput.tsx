@@ -21,7 +21,9 @@ interface StandardTextinputProps {
     textInputStyles?: object
     textInputProps?: TextInputProps
 
-    onChangeText?: (text: string) => string
+    /* Not Implimtented */
+    onChangeText?: (text: string) => void
+    
     onInputBlur?: (text: string) => string
 
 }
@@ -43,19 +45,15 @@ const StandardTextinput: FC<StandardTextinputProps> = (props: StandardTextinputP
     } = props
 
 
-    const StyTextInputContainer = styled.View`
-        padding: 0 4px;
-    `
-
-    const StyTextInput = styled.TextInput`
-        font-size: 18px;
-    `
 
     const handleInputTextchanged = (text: string) => {
-        console.log(text)
+        //console.log(text)
         setInputValue(text)
+        if (onChangeText) { onChangeText(text) }
     }
-
+    const handleOnBlur = () => {
+        console.log(inputValue)
+    }
 
     const [inputValue, setInputValue] = useState<string>(text)
 
@@ -64,12 +62,13 @@ const StandardTextinput: FC<StandardTextinputProps> = (props: StandardTextinputP
         <TextInput
             style={styles.textInput}
 
-            placeholder={`"collection name"`}
-            placeholderTextColor={"#dddddd"}
+            placeholder={placeholderText}
+            placeholderTextColor={placeholderColor}
 
             value={inputValue}
 
             onChangeText={(text: string) => handleInputTextchanged(text)}
+            onBlur={handleOnBlur}
         />
     </View>
 }
@@ -80,6 +79,7 @@ export default StandardTextinput
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 8,
+        paddingBottom: 4,
 
         borderColor: "#fff",
         borderBottomWidth: 2,
