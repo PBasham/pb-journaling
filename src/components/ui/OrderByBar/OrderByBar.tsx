@@ -2,7 +2,7 @@
         Import Dependencies
 ========================================*/
 import { Ionicons } from "@expo/vector-icons"
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { View, StyleSheet, Pressable, Touchable, StyleProp, TextStyle } from 'react-native'
 import { BodyText, HeaderThree } from "../text"
 import { StyOrderByBar, StySortByOptionBox, StySortByOptionFloatBox, StySortByOptionFloatBoxInner, StyHeaderDiv } from "./styles"
@@ -17,6 +17,8 @@ interface SortHeaderBarProps {
     header?: string
     headerStyles?: StyleProp<TextStyle>
 
+    handleEnableScroll?: () => void
+    handleDisableScroll?: () => void
 
     onPress: (sortBy: string, orderBy: boolean) => void
 }
@@ -29,6 +31,9 @@ const SortHeaderBar: FC<SortHeaderBarProps> = (props: SortHeaderBarProps) => {
         sortOptions,
         header,
         headerStyles,
+
+        handleEnableScroll,
+        handleDisableScroll,
 
         onPress: handleUpdateSort,
     } = props;
@@ -46,7 +51,10 @@ const SortHeaderBar: FC<SortHeaderBarProps> = (props: SortHeaderBarProps) => {
     const SortByOptions_Click = () => {
         console.log("Open options")
         setIsSortByDDOptionsOpen(true)
+        // handleDisableScroll()
     }
+
+    
 
     const handleCloseSortByOptionsDD = (newOption: string | null) => {
 
@@ -56,6 +64,7 @@ const SortHeaderBar: FC<SortHeaderBarProps> = (props: SortHeaderBarProps) => {
 
 
         setIsSortByDDOptionsOpen(false)
+        // handleEnableScroll()
     }
 
     //LEFTOFF - getting touch response from buttons and organizing them

@@ -19,6 +19,7 @@ import { useMyBooks, useMyCollections } from "../../hooks";
 import { useMyNotes } from "../../hooks/useMyNotes";
 import { CollectionCard, BookCard, NoteCard } from "../../components";
 import { RoundIconBtn } from "../../components/ui/buttons";
+import { AddCollectionModal } from "../../components/modals";
 
 
 const CollectionScreenContainer = styled.ScrollView`
@@ -28,7 +29,7 @@ const CollectionScreenContainer = styled.ScrollView`
     height: 100%; */
     background-color: ${colors.generalColors.background};
 `;
-const CollectionScreenContainerInner = styled.ScrollView`
+const CollectionScreenContainerInner = styled.View`
     gap: 20px;
 
     /* padding-left: 20px;
@@ -90,6 +91,8 @@ const Collections: FunctionComponent = () => {
 
     //TODO - set up state for each sections Filter/sort order
 
+    const [ isScrollEnabled, setIsScrollEnabled ] = useState<boolean>(true)
+
     const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
 
     const [myBooks, myBookSortBY, bookSortOptions, myBookSortAsc, addBook, removeBook, updateBook, sortMyBooks] = useMyBooks()
@@ -120,12 +123,18 @@ const Collections: FunctionComponent = () => {
     }
     //TODO - Set up functions to handle that state change, and update async storage with new filter/sort order type for section
 
+    const handleDisableScroll = () => [setIsScrollEnabled(false)]
+    const handleEnableScroll = () => [setIsScrollEnabled(true)]
+
 
     return (
         <>
             {/* <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} /> */}
             <SafeAreaView edges={['top']} />
-            <CollectionScreenContainer >
+            <AddCollectionModal />
+            <CollectionScreenContainer 
+                scrollEnabled={isScrollEnabled}
+            >
                 <CollectionScreenContainerInner>
                 
                     <TopBar hasDotsButton />
@@ -134,6 +143,9 @@ const Collections: FunctionComponent = () => {
                         sortAsc={myCollectionSortAsc}
                         sortOptions={collectionSortOptions}
                         header="Collections"
+
+                        handleEnableScroll={handleEnableScroll}
+                        handleDisableScroll={handleDisableScroll}
 
                         onPress={handleUpdateCollectionSortOrder}
                     />
@@ -162,6 +174,9 @@ const Collections: FunctionComponent = () => {
                         sortAsc={myBookSortAsc}
                         sortOptions={bookSortOptions}
                         header="Books"
+
+                        handleEnableScroll={handleEnableScroll}
+                        handleDisableScroll={handleDisableScroll}
 
                         onPress={handleUpdateMyBooksSortOrder}
                     />
@@ -193,6 +208,9 @@ const Collections: FunctionComponent = () => {
                         sortOptions={noteSortOptions}
                         header="Notes"
 
+                        handleEnableScroll={handleEnableScroll}
+                        handleDisableScroll={handleDisableScroll}
+                        
                         onPress={handleUpdateMyNotesSortOrder}
                     />
 
