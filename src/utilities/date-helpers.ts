@@ -27,7 +27,7 @@ export const formatDate = (date: Date | undefined): string => {
     const mm = (date.getMonth() + 1).toString().padStart(2, "0")
     const dd = date.getDate().toString().padStart(2, "0")
     const yyyy = date.getFullYear()
-    
+
     return `${mm}/${dd}/${yyyy}`
 }
 
@@ -49,7 +49,7 @@ export const formatDateNamed = (date: Date | undefined): string => {
     if (!date) return ""
 
     if (typeof date == "string") date = new Date(date)
-    
+
     const mm = date.getMonth()
     const dd = date.getDay()
     const yyyy = date.getFullYear()
@@ -66,7 +66,7 @@ export const formatDateNamedAndTime = (date: Date | undefined): string => {
     if (!date) return ""
 
     if (typeof date == "string") date = new Date(date)
-    
+
     const mm = date.getMonth()
     const dd = date.getDay()
     const yyyy = date.getFullYear()
@@ -101,12 +101,12 @@ export const getNamedDayMonthYear = (): string => {
     return `${dayName}, ${monthName} ${date.getDate()}`
 }
 
- // convert time to am/pm
- export const converTimeToAMPM = (time: Date | undefined) => {
+// convert time to am/pm
+export const converTimeToAMPM = (time: Date | undefined) => {
     if (!time) return ""
-    let hh: number = time.getHours()
-    let m: number = time.getMinutes()
-    let s: number = time.getSeconds()
+    let hh: number = new Date(time).getHours()
+    let m: number = new Date(time).getMinutes()
+    let s: number = new Date(time).getSeconds()
     let tt: string = "AM"
 
     if (hh >= 12) {
@@ -119,7 +119,9 @@ export const getNamedDayMonthYear = (): string => {
 }
 
 export const getRelativeDate = (date: Date) => {
-
+    if (!date) { return }
+    console.log("I'm in here!")
+    console.log(date)
     const today = new Date();
 
     let yesterday = new Date();
@@ -128,10 +130,11 @@ export const getRelativeDate = (date: Date) => {
     let weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7)
 
-    let formatedDate: string = date.toLocaleDateString();
+    let formatedDate: string = new Date(date).toLocaleDateString();
+    // let formatedDate: string = date.toString()
 
     if (matchesToday(date)) { formatedDate = converTimeToAMPM(date) }
     else if (date > weekAgo) { formatedDate = formatDateDayNamedAndTime(date) }
 
-    return formatedDate;    
+    return formatedDate;
 }

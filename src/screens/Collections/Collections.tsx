@@ -93,7 +93,7 @@ const Collections: FunctionComponent = () => {
 
     const [isScrollEnabled, setIsScrollEnabled] = useState<boolean>(true)
 
-    const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections] = useMyCollections()
+    const [myCollections, myCollectionSortBY, collectionSortOptions, myCollectionSortAsc, addCollection, removeCollection, updateCollection, sortMyCollections, getNextRecordId] = useMyCollections()
 
     const [myBooks, myBookSortBY, bookSortOptions, myBookSortAsc, addBook, removeBook, updateBook, sortMyBooks] = useMyBooks()
 
@@ -109,7 +109,12 @@ const Collections: FunctionComponent = () => {
 
     }, [])
 
-    const handleSetUpData = async () => { }
+    const handleSetUpData = async () => {
+        //TODO Get Collections
+
+        //TODO Get Loose Books
+        //TODO Get Loose Notes
+    }
 
     const handleUpdateCollectionSortOrder = async (sortBy: string, sortAsc: boolean) => {
         sortMyCollections(myCollections, sortBy, sortAsc)
@@ -138,7 +143,7 @@ const Collections: FunctionComponent = () => {
         <>
             {/* <SafeAreaView edges={['top']} children={<TopBar hasDotsButton />} /> */}
             <SafeAreaView edges={['top']} />
-            <AddCollectionModal isModalOpen={isAddCollectionModalOpen} closeModal={hideAddCollectionModal}/>
+            <AddCollectionModal isModalOpen={isAddCollectionModalOpen} addCollection={addCollection} getNextRecordId={getNextRecordId} closeModal={hideAddCollectionModal} />
             <CollectionScreenContainer
                 scrollEnabled={isScrollEnabled}
             >
@@ -156,7 +161,7 @@ const Collections: FunctionComponent = () => {
 
                         onPress={handleUpdateCollectionSortOrder}
                     />
-                    <CollectionsDiv children={myCollections!.map((collection) => {
+                    <CollectionsDiv children={myCollections.map((collection) => {
                         return <CollectionCard
                             key={`${collection.recordId}-${collection.id}-${collection.createdAt}`}
                             recordId={collection.recordId}
@@ -170,8 +175,8 @@ const Collections: FunctionComponent = () => {
                             pin={collection.pin}
                             createdAt={collection.createdAt}
                             updatedAt={collection.updatedAt}
-                            books={collection.books}
-                            notes={collection.notes}
+                            bookCount={collection.bookCount}
+                            noteCount={collection.noteCount}
                         />
                     })}
                     />
@@ -226,7 +231,6 @@ const Collections: FunctionComponent = () => {
                         return <NoteCard
                             key={`${note.id}-${note.createdAt}`}
                             collectionRef={note.collectionRef}
-                            bookRef={note.bookRef}
                             recordId={note.recordId}
                             id={note.id}
                             title={note.title}

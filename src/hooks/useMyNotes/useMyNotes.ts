@@ -66,43 +66,43 @@ const useMyNotes = (): [
         //TODO - get myNotes from async storage
         const Notes: Note[] = [
             {
-                collectionRef: null,
-                bookRef: null,
-    
+                // collectionRef: null,
+                //bookRef: null,
+
                 recordId: 1,
                 id: "note1",
-    
+
                 color: "",
                 title: "A book",
                 feeling: "feeling",
                 text: "Ipsum Lorim isffe Lorim isffe Lorim isffe Lorim isffe Lorim isffe ",
-    
+
                 isFavorite: false,
                 isLocked: false,
-    
+
                 createdAt: new Date("2024-01-22"),
                 updatedAt: new Date("2024-01-21"),
             },
             {
-                collectionRef: null,
-                bookRef: null,
-    
+                // collectionRef: null,
+                //bookRef: null,
+
                 recordId: 2,
                 id: "note2",
-    
+
                 color: "",
                 title: "This is another book",
                 feeling: "feeling",
                 text: "Ipsum Lorim isffe Lorim isffe Lorim isffe Lorim isffe Lorim isffe ",
-    
+
                 isFavorite: false,
                 isLocked: false,
-    
+
                 createdAt: new Date("2024-01-21"),
                 updatedAt: new Date("2024-01-22"),
             },
-    
-    
+
+
         ]
         return Notes
     }

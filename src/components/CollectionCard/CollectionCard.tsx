@@ -1,7 +1,7 @@
 /*========================================
         Import Dependencies
 ========================================*/
-import React, { FC } from 'react'
+import React, { FC, useEffect } from 'react'
 import { View, StyleSheet } from 'react-native'
 
 import styled from "styled-components/native";
@@ -34,22 +34,25 @@ const CollectionCard: FC<Collection> = (props: Collection) => {
         createdAt,
         updatedAt,
 
-        books,
-        notes,
+        bookCount,
+        noteCount,
 
     } = props;
 
-    let formatedDate = getRelativeDate(updatedAt);
+    // let formatedDate = ""
+    // useEffect(() => {
+    let formatedDate = getRelativeDate(updatedAt)
+    // },[])
 
-        return <StyCollectionCard  >
-            <StyPressableArea onPress={() => console.log("I've been pressed (CollectionCard)")} />
-            <StyCollectionColorBar style={{ backgroundColor: color == null ? "#ababab" : color }} />
-            <StyCollectionInnerDiv>
-                <BodyText textAlignment="left" text={name} />
-                <SubierText textAlignment="left" text={`${formatedDate}`} />
-                <SubText textAlignment="left" text={`${books.length} Books, ${notes.length} Notes`} />
-            </StyCollectionInnerDiv>
-        </StyCollectionCard>
+    return <StyCollectionCard  >
+        <StyPressableArea onPress={() => console.log("I've been pressed (CollectionCard)")} />
+        <StyCollectionColorBar style={{ backgroundColor: color == null ? "#ababab" : color }} />
+        <StyCollectionInnerDiv>
+            <BodyText textAlignment="left" text={name} />
+            <SubierText textAlignment="left" text={`${formatedDate}`} />
+            <SubText textAlignment="left" text={`${bookCount} Books, ${noteCount} Notes`} />
+        </StyCollectionInnerDiv>
+    </StyCollectionCard>
 
 }
 

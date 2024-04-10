@@ -15,10 +15,14 @@ import {
     StyModalFloatBoxBtnsDiv,
     StyModalFloatBoxBtn
 } from "./styles"
+import { Collection } from "../../../interfaces/Collection"
+import { getDate } from "../../../utilities/date-helpers"
 
 
 interface AddCollectionModalProps {
     isModalOpen: boolean
+    addCollection: (newCollection: Collection) => Promise<boolean>
+    getNextRecordId: () => Promise<number>
     closeModal: () => void
 }
 
@@ -28,7 +32,7 @@ const AddCollectionModal: FC<AddCollectionModalProps> = (props: AddCollectionMod
 
     // const [isModalOpen, setIsModalOpen] = useState<boolean>(true)
 
-    const { isModalOpen, closeModal } = props
+    const { isModalOpen, addCollection, getNextRecordId, closeModal } = props
 
     const [selectedColor, setSelectedColor] = useState<string>("")
 
@@ -50,6 +54,7 @@ const AddCollectionModal: FC<AddCollectionModalProps> = (props: AddCollectionMod
     ]
 
     useEffect(() => {
+        setNewCollectionName("")
         setSelectedColor("")
     }, [isModalOpen])
 
@@ -57,7 +62,7 @@ const AddCollectionModal: FC<AddCollectionModalProps> = (props: AddCollectionMod
         setNewCollectionName(collectionName)
     }
 
-    const handleCreatePress = () => {
+    const handleCreatePress = async () => {
         // name
         let hasValidName: boolean = !(newCollectionName === "")
         console.log(newCollectionName === "" ? "Need name" : newCollectionName)
@@ -66,7 +71,33 @@ const AddCollectionModal: FC<AddCollectionModalProps> = (props: AddCollectionMod
         console.log(selectedColor === "" ? "Need color" : selectedColor)
 
         let isValid: boolean = hasValidName && hasValidColor
-        if (isValid) { console.log("Can create!") }
+        if (!isValid) { console.log("Invalid Creation"); return }
+
+        console.log("Can create!")
+
+        const nextRecordNum = await getNextRecordId()
+        const creationTime: Date = getDate()
+
+        const newCollection: Collection = {
+            recordId: nextRecordNum,
+
+            id: `collection-${nextRecordNum}`,
+            name: newCollectionName,
+            color: selectedColor,
+            isFavorite: false,
+            isLocked: false,
+            createdAt: creationTime,
+            updatedAt: creationTime,
+
+            bookCount: 0,
+            noteCount: 0,
+        }
+
+        const isSuccessful: boolean = await addCollection(newCollection)
+
+        if (!isSuccessful) { console.log("Failed to craete!"); return }
+        // close me
+        closeModal()
     }
 
     return (
