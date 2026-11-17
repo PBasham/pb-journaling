@@ -386,6 +386,91 @@ export async function shiftPage(db: Database, id: string, step: -1 | 1): Promise
   });
 }
 
+// Bringing things in -------------------------------------------------------
+
+export interface MoveCandidate {
+  kind: 'book' | 'note';
+  id: string;
+  name: string;
+  color: string;
+  isLocked: boolean;
+  /** Where it is now: "Library", a collection's name, or "Page in <book>". */
+  where: string;
+  isPage: boolean;
+}
+
+/**
+ * What can be brought into a collection (books, loose notes and pages from elsewhere) or into a
+ * book (loose notes and other books' pages, which become its pages). Newest first.
+ */
+export async function listMoveCandidates(db: Database, target: NotePlace): Promise<MoveCandidate[]> {
+  const intoBook = target.bookId ?? null;
+  const intoCollection = intoBook ? null : (target.collectionId ?? null);
+  const collections = new Map(
+    (await db.select().from(schema.collections).where(live(schema.collections))).map((c) => [c.id, c.name]),
+  );
+  const books = await db.select().from(schema.books).where(live(schema.books)).orderBy(desc(schema.books.updatedAt));
+  const bookName = new Map(books.map((b) => [b.id, b.name]));
+  const notes = await db.select().from(schema.notes).where(live(schema.notes)).orderBy(desc(schema.notes.updatedAt));
+  const placeName = (collectionId: string | null) => (collectionId ? (collections.get(collectionId) ?? 'Library') : 'Library');
+
+  const out: MoveCandidate[] = [];
+  if (!intoBook) {
+    for (const b of books) {
+      if (b.collectionId === intoCollection) continue;
+      out.push({ kind: 'book', id: b.id, name: b.name, color: b.color, isLocked: b.isLocked, where: placeName(b.collectionId), isPage: false });
+    }
+  }
+  for (const n of notes) {
+    if (intoBook && n.bookId === intoBook) continue;
+    if (!intoBook && !n.bookId && n.collectionId === intoCollection) continue;
+    // A page whose book has gone to Recently deleted isn't offered.
+    if (n.bookId && !bookName.has(n.bookId)) continue;
+    out.push({
+      kind: 'note',
+      id: n.id,
+      name: n.title || 'Untitled',
+      color: n.color,
+      isLocked: n.isLocked,
+      where: n.bookId ? `Page in ${bookName.get(n.bookId)}` : placeName(n.collectionId),
+      isPage: !!n.bookId,
+    });
+  }
+  return out;
+}
+
+/** Moves several books and notes into a collection, a book (as pages, in the given order) or the Library. */
+export async function moveItemsInto(db: Database, target: NotePlace, items: { kind: 'book' | 'note'; id: string }[]): Promise<void> {
+  const intoBook = target.bookId ?? null;
+  for (const item of items) {
+    if (item.kind === 'book') {
+      // Books can't go inside books.
+      if (!intoBook) await moveBook(db, item.id, target.collectionId ?? null);
+    } else {
+      await moveNote(db, item.id, target);
+    }
+  }
+}
+
+/**
+ * Takes something out of where it is: a book or loose note leaves its collection for the Library;
+ * a page leaves its book and becomes a loose note where the book is (its collection, or the Library).
+ */
+export async function takeOut(db: Database, kind: 'book' | 'note', id: string): Promise<void> {
+  if (kind === 'book') {
+    await moveBook(db, id, null);
+    return;
+  }
+  const note = await getNote(db, id);
+  if (!note) return;
+  if (note.bookId) {
+    const book = await getBook(db, note.bookId);
+    await moveNote(db, id, { collectionId: book?.collectionId ?? null });
+  } else {
+    await moveNote(db, id, { collectionId: null });
+  }
+}
+
 // Reordering ----------------------------------------------------------------
 
 /** Puts a book's pages in the given order. Ids not in the book are ignored; missing ones go last. */
@@ -503,19 +588,21 @@ export async function searchLibrary(
     ? sql`${schema.notes.id} in (select note_id from "note_tags" where tag_id = ${tagId})`
     : undefined;
 
-  // A tag filter is about notes, so collections and books drop out.
-  const collections = tagId
-    ? []
-    : await db
+  const collections = await db
     .select()
     .from(schema.collections)
-    .where(and(live(schema.collections), eq(schema.collections.isLocked, false), like(schema.collections.name)))
+    .where(
+      and(
+        live(schema.collections),
+        eq(schema.collections.isLocked, false),
+        q ? like(schema.collections.name) : undefined,
+        tagId ? sql`${schema.collections.id} in (select collection_id from "collection_tags" where tag_id = ${tagId})` : undefined,
+      ),
+    )
     .orderBy(sql`lower(${schema.collections.name})`)
     .limit(limit);
 
-  const bookRows = tagId
-    ? []
-    : await db
+  const bookRows = await db
     .select({ book: schema.books })
     .from(schema.books)
     .leftJoin(schema.collections, eq(schema.books.collectionId, schema.collections.id))
@@ -524,7 +611,8 @@ export async function searchLibrary(
         live(schema.books),
         eq(schema.books.isLocked, false),
         sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
-        like(schema.books.name),
+        q ? like(schema.books.name) : undefined,
+        tagId ? sql`${schema.books.id} in (select book_id from "book_tags" where tag_id = ${tagId})` : undefined,
       ),
     )
     .orderBy(sql`lower(${schema.books.name})`)
@@ -657,6 +745,8 @@ export async function duplicateBook(db: Database, id: string): Promise<string | 
     createdAt: now,
     updatedAt: now,
   });
+  await db.run(sql`insert into ${schema.bookTags} (book_id, tag_id)
+    select ${copyId}, tag_id from ${schema.bookTags} where book_id = ${id}`);
   for (const page of await listPages(db, id)) {
     const pageId = newId();
     await db.insert(schema.notes).values({ ...page, id: pageId, bookId: copyId, lastOpenedAt: null, createdAt: now, updatedAt: now });

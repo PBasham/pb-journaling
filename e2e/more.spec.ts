@@ -84,7 +84,7 @@ test('manages tags and templates in Settings', async ({ page }) => {
   await page.getByLabel('Name').fill('recipe');
   await button(page, 'Save').click();
   await expect(page.getByRole('button', { name: /^#todo/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^#recipe, 5 notes/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^#recipe, 6 items/ })).toBeVisible();
   await tapBack(page);
   await button(page, /^Templates/).click();
   await expect(page.getByText('Meeting notes')).toBeVisible();

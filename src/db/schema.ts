@@ -93,7 +93,7 @@ export const notes = sqliteTable(
   ],
 );
 
-/** Tags people put on notes and pages, used to filter search. */
+/** Tags people put on collections, books, notes and pages, used to filter search. */
 export const tags = sqliteTable(
   'tags',
   {
@@ -116,6 +116,32 @@ export const noteTags = sqliteTable(
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (t) => [primaryKey({ columns: [t.noteId, t.tagId] }), index('note_tags_tag_idx').on(t.tagId)],
+);
+
+export const bookTags = sqliteTable(
+  'book_tags',
+  {
+    bookId: text('book_id')
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.bookId, t.tagId] }), index('book_tags_tag_idx').on(t.tagId)],
+);
+
+export const collectionTags = sqliteTable(
+  'collection_tags',
+  {
+    collectionId: text('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.collectionId, t.tagId] }), index('collection_tags_tag_idx').on(t.tagId)],
 );
 
 /** Layouts a new note can start from. Built in ones are seeded by the app with fixed ids (`builtin-…`). */

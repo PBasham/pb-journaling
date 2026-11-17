@@ -48,10 +48,13 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - [x] Templates: five built in (Recipe, Meeting notes, Daily log, Checklist, Book notes), save any note as one, offered on new notes
 - [x] Tags on notes and pages, tag chips under the title, search by tag, manage in Settings (rename merges)
 - [x] Photos in notes: camera or gallery, private shrunk copies, full screen viewer, included in backups (zip)
+- [x] Tags on collections and books too (chips on their screens, in their options, search by tag finds them)
+- [x] Moving made easy: Remove from collection, Take out of book (page becomes a loose note where the book is), and Move to… with hints
+- [x] Bring things in: a collection's + menu moves in existing books, notes or pages; a book's "Add existing notes as pages" turns notes and other pages into its pages
 - [ ] Test drag to reorder, biometrics, share sheet, file picker, camera and photos on a real Android phone
 - [ ] Pick the app name (then update `app.json`, the listing and the policy)
 - [ ] Owner checklist before publishing: contact email (privacy policy), developer name, package id
-- [ ] Ideas: tags on books and collections, photos inline in the text, home screen widget
+- [ ] Ideas: photos inline in the text, home screen widget, nested collections
 
 ## Decisions log
 
@@ -70,3 +73,5 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - 2026-11-16: Tags are on notes and pages only for now; search filters by them. Restoring a backup by adding joins tags that share a name.
 - 2026-11-16: Photos sit in a strip on the note (not inline in the text) and are files in app storage. Copies of a note share files; unused files are removed at startup. Backups with photos are a zip; encrypted backups encrypt the photos too.
 - 2026-11-16: Developer tools only show in the development build or a dev server session.
+- 2026-11-16: Tags work on collections and books as well as notes. A tag's count covers all three. Tagging a collection doesn't tag what's inside it.
+- 2026-11-16: Taking a page out of a book makes it a loose note in the book's collection (or the Library). Books can't go inside books.

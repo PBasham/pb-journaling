@@ -77,7 +77,7 @@ test('moves a note into a book and deletes with undo', async ({ page }) => {
   await tapBack(page);
 
   await page.getByRole('button', { name: /^Stray thought/ }).click({ delay: 800 });
-  await button(page, 'Move to…').click();
+  await button(page, /^Move to…/).click();
   await button(page, 'Journal').click();
   await expect(page.getByText('Moved to Journal.')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Stray thought/ })).toHaveCount(0);

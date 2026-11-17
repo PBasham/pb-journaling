@@ -7,22 +7,30 @@ import { useDb } from '@/db';
 import { run } from '@/lib/errors';
 import { createStyles, itemColorValue, useTheme } from '@/theme';
 
-import { useNoteTags, useTagsWithCounts } from '../queries';
-import { findOrCreateTag, setNoteTags } from '../tags';
+import type { ItemKind } from '../../library/library';
+import { useItemTags, useTagsWithCounts } from '../queries';
+import { findOrCreateTag, setItemTags } from '../tags';
 
-/** Pick a note's tags, or make a new one. Changes save right away. */
-export function TagPickerSheet({ noteId, visible, onClose }: { noteId: string; visible: boolean; onClose: () => void }) {
+interface TagPickerSheetProps {
+  kind: ItemKind;
+  id: string;
+  visible: boolean;
+  onClose: () => void;
+}
+
+/** Pick a collection's, book's or note's tags, or make a new one. Changes save right away. */
+export function TagPickerSheet({ kind, id, visible, onClose }: TagPickerSheetProps) {
   const db = useDb();
   const styles = useStyles();
   const theme = useTheme();
   const { data: all } = useTagsWithCounts();
-  const { data: current } = useNoteTags(noteId);
+  const { data: current } = useItemTags(kind, id);
   const [name, setName] = useState('');
   const selected = new Set(current.map((t) => t.id));
 
   const toggle = (tagId: string) => {
     const next = selected.has(tagId) ? [...selected].filter((id) => id !== tagId) : [...selected, tagId];
-    run(setNoteTags(db, noteId, next), 'Could not change the tags.');
+    run(setItemTags(db, kind, id, next), 'Could not change the tags.');
   };
 
   const add = () => {
@@ -30,7 +38,7 @@ export function TagPickerSheet({ noteId, visible, onClose }: { noteId: string; v
     if (!clean) return;
     setName('');
     run(
-      findOrCreateTag(db, clean).then((tag) => setNoteTags(db, noteId, [...selected, tag.id])),
+      findOrCreateTag(db, clean).then((tag) => setItemTags(db, kind, id, [...selected, tag.id])),
       'Could not add the tag.',
     );
   };
@@ -60,7 +68,7 @@ export function TagPickerSheet({ noteId, visible, onClose }: { noteId: string; v
               <ListRow
                 key={tag.id}
                 title={`#${tag.name}`}
-                description={`${tag.count} ${tag.count === 1 ? 'note' : 'notes'}`}
+                description={`Used ${tag.count} ${tag.count === 1 ? 'time' : 'times'}`}
                 divider={i > 0}
                 onPress={() => toggle(tag.id)}
                 right={

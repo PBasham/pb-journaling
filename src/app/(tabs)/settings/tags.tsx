@@ -35,7 +35,7 @@ export default function TagsScreen() {
               key={tag.id}
               icon="pricetag-outline"
               title={`#${tag.name}`}
-              value={plural(tag.count, 'note')}
+              value={plural(tag.count, 'item')}
               divider={i > 0}
               onPress={() => open(tag)}
             />

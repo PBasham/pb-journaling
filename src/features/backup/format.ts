@@ -21,6 +21,8 @@ export const backupTables = [
   'notes',
   'tags',
   'noteTags',
+  'bookTags',
+  'collectionTags',
   'templates',
   'notePhotos',
   'settings',
@@ -31,7 +33,7 @@ export type PortableRow = Record<string, unknown>;
 export type BackupData = Record<BackupTable, PortableRow[]>;
 
 /** Tables added after the first backup format. Older backups don't have them; they restore empty. */
-const LATER_TABLES = new Set<BackupTable>(['tags', 'noteTags', 'templates', 'notePhotos']);
+const LATER_TABLES = new Set<BackupTable>(['tags', 'noteTags', 'bookTags', 'collectionTags', 'templates', 'notePhotos']);
 
 interface BackupHeader {
   app: typeof BACKUP_APP;

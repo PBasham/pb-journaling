@@ -19,6 +19,8 @@ const emptyData = (): BackupData => ({
   notes: [],
   tags: [],
   noteTags: [],
+  bookTags: [],
+  collectionTags: [],
   templates: [],
   notePhotos: [{ id: 'p1', noteId: 'n1', fileName: 'a.jpg', width: 10, height: 10, position: 0 }],
   settings: [],
@@ -63,6 +65,8 @@ describe('backup archives', () => {
     delete data.notePhotos;
     delete data.tags;
     delete data.noteTags;
+    delete data.bookTags;
+    delete data.collectionTags;
     delete data.templates;
     const text = JSON.stringify({ ...buildBackup(emptyData(), 2), data });
     const opened = openBackupBytes(strToU8(text));

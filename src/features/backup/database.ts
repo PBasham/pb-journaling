@@ -16,6 +16,8 @@ const tables = {
   notes: schema.notes,
   tags: schema.tags,
   noteTags: schema.noteTags,
+  bookTags: schema.bookTags,
+  collectionTags: schema.collectionTags,
   templates: schema.templates,
   notePhotos: schema.notePhotos,
   settings: schema.settings,
@@ -60,11 +62,14 @@ export async function restoreData(db: Database, data: BackupData, mode: RestoreM
       if (match && match !== t.id) tagIdFor.set(String(t.id), match);
     }
   }
-  const noteTagRows = rows('noteTags').map((r) => ({ ...r, tagId: tagIdFor.get(String(r.tagId)) ?? r.tagId }));
+  const relink = (name: 'noteTags' | 'bookTags' | 'collectionTags') =>
+    rows(name).map((r) => ({ ...r, tagId: tagIdFor.get(String(r.tagId)) ?? r.tagId }));
   db.transaction((tx) => {
     if (mode === 'replace') {
       // Children first. Deleting collections cascades, but be explicit.
       tx.delete(schema.noteTags).run();
+      tx.delete(schema.bookTags).run();
+      tx.delete(schema.collectionTags).run();
       tx.delete(schema.notePhotos).run();
       tx.delete(schema.notes).run();
       tx.delete(schema.tags).run();
@@ -86,7 +91,9 @@ export async function restoreData(db: Database, data: BackupData, mode: RestoreM
     insert('books', rows('books'));
     insert('notes', rows('notes'));
     insert('tags', rows('tags').filter((t) => !tagIdFor.has(String(t.id))));
-    insert('noteTags', noteTagRows);
+    insert('noteTags', relink('noteTags'));
+    insert('bookTags', relink('bookTags'));
+    insert('collectionTags', relink('collectionTags'));
     insert('templates', rows('templates'));
     insert('notePhotos', rows('notePhotos'));
     if (mode === 'replace') insert('settings', rows('settings'));

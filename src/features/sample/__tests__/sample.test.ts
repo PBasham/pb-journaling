@@ -16,7 +16,7 @@ describe('sample data', () => {
     expect(collections[0]).toMatchObject({ bookCount: 2, noteCount: 1 });
     expect((await listNotes(db, null))[0].title).toBe('Ideas');
     expect((await listFavorites(db)).collections).toHaveLength(1);
-    expect((await listTagsWithCounts(db)).map((t) => `${t.name}:${t.count}`)).toEqual(['recipe:3', 'todo:2', 'travel:2']);
+    expect((await listTagsWithCounts(db)).map((t) => `${t.name}:${t.count}`)).toEqual(['recipe:4', 'todo:2', 'travel:3']);
   });
 
   it('makes bulk data of the requested size', async () => {

@@ -27,6 +27,7 @@ import {
   noteStats,
   restoreDeleted,
   shiftPage,
+  takeOut,
   updateBook,
   updateCollection,
   updateNote,
@@ -70,11 +71,11 @@ export function ItemActions({ target, onClose, onDeleted }: ItemActionsProps) {
       <EditSheet target={target} visible={step === 'edit'} onClose={close} />
       <MoveSheet target={target} visible={step === 'move'} onClose={close} />
       <DeleteSheet target={target} visible={step === 'delete'} onClose={close} onDeleted={onDeleted} />
+      <TagPickerSheet kind={target.kind} id={target.item.id} visible={step === 'tags'} onClose={close} />
       {target.kind === 'note' ? (
         <>
           <InfoSheet note={target.item} visible={step === 'info'} onClose={close} />
           <SaveTemplateSheet note={target.item} visible={step === 'template'} onClose={close} />
-          <TagPickerSheet noteId={target.item.id} visible={step === 'tags'} onClose={close} />
         </>
       ) : null}
     </>
@@ -196,6 +197,16 @@ function Menu({
     );
   };
 
+  const inCollection = kind !== 'collection' && !isPage && !!item.collectionId;
+  const takeOutOf = () => {
+    onClose();
+    if (kind === 'collection') return;
+    run(
+      takeOut(db, kind, item.id).then(() => showInfo(isPage ? 'Taken out of the book.' : 'Moved to the Library.')),
+      'Could not move it.',
+    );
+  };
+
   const shift = (step: -1 | 1) => {
     run(shiftPage(db, item.id, step), 'Could not move the page.');
     onClose();
@@ -226,12 +237,8 @@ function Menu({
             onPress={togglePin}
           />
         ) : null}
-        {kind === 'note' ? (
-          <>
-            <ListRow icon="pricetag-outline" title="Tags" divider onPress={() => onStep('tags')} />
-            <ListRow icon="share-outline" title="Share" divider onPress={share} />
-          </>
-        ) : null}
+        <ListRow icon="pricetag-outline" title="Tags" divider onPress={() => onStep('tags')} />
+        {kind === 'note' ? <ListRow icon="share-outline" title="Share" divider onPress={share} /> : null}
         {kind !== 'collection' ? (
           <ListRow icon="copy-outline" title={kind === 'book' ? 'Duplicate book' : 'Duplicate'} divider onPress={duplicate} />
         ) : null}
@@ -241,8 +248,26 @@ function Menu({
             <ListRow icon="information-circle-outline" title="Info" divider onPress={() => onStep('info')} />
           </>
         ) : null}
+        {inCollection ? (
+          <ListRow icon="exit-outline" title="Remove from collection" description="Moves it to the Library" divider onPress={takeOutOf} />
+        ) : null}
+        {isPage ? (
+          <ListRow
+            icon="exit-outline"
+            title="Take out of book"
+            description="Becomes a loose note where the book is"
+            divider
+            onPress={takeOutOf}
+          />
+        ) : null}
         {kind !== 'collection' ? (
-          <ListRow icon="folder-open-outline" title="Move to…" divider onPress={() => onStep('move')} />
+          <ListRow
+            icon="folder-open-outline"
+            title="Move to…"
+            description={kind === 'book' ? 'A collection or the Library' : 'The Library, a collection, or a book as a page'}
+            divider
+            onPress={() => onStep('move')}
+          />
         ) : null}
         {isPage ? (
           <>

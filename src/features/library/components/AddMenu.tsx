@@ -12,18 +12,22 @@ import { createStyles, useTheme } from '@/theme';
 
 import { createBook, createCollection, createNote, type NotePlace } from '../library';
 
+import { BringInSheet } from './BringInSheet';
 import { ItemFormSheet } from './ItemFormSheet';
 
-type Kind = 'note' | 'book' | 'collection' | 'page';
+type Kind = 'note' | 'book' | 'collection' | 'page' | 'existing';
 
 const options: Record<Kind, { title: string; description: string; icon: ComponentProps<typeof Ionicons>['name'] }> = {
   note: { title: 'Note', description: 'A single loose page', icon: 'document-text-outline' },
   page: { title: 'Page', description: 'Add a page to the end of this book', icon: 'document-outline' },
   book: { title: 'Book', description: 'Pages kept together in order', icon: 'book-outline' },
   collection: { title: 'Collection', description: 'A home for books and notes', icon: 'albums-outline' },
+  existing: { title: 'Something you already have', description: 'Move books, notes or pages in from elsewhere', icon: 'enter-outline' },
 };
 
 interface AddMenuProps {
+  /** Name of the collection or book this menu adds to, for "Bring into Recipes". */
+  placeName?: string;
   /** What can be added here, in menu order. With one choice the button adds it straight away. */
   kinds: Kind[];
   /** Where new items go. */
@@ -31,18 +35,23 @@ interface AddMenuProps {
 }
 
 /** The round + button in the corner, and the flows behind it. */
-export function AddMenu({ kinds, place }: AddMenuProps) {
+export function AddMenu({ kinds, place, placeName = 'here' }: AddMenuProps) {
   const db = useDb();
   const styles = useStyles();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState<'book' | 'collection' | null>(null);
+  const [bringIn, setBringIn] = useState(false);
 
   const start = (kind: Kind) => {
     setMenuOpen(false);
     if (kind === 'book' || kind === 'collection') {
       setForm(kind);
+      return;
+    }
+    if (kind === 'existing') {
+      setBringIn(true);
       return;
     }
     run(
@@ -70,13 +79,14 @@ export function AddMenu({ kinds, place }: AddMenuProps) {
               key={kind}
               icon={options[kind].icon}
               title={options[kind].title}
-              description={options[kind].description}
+              description={kind === 'existing' && place.bookId ? 'Move notes or pages in as pages' : options[kind].description}
               divider={i > 0}
               onPress={() => start(kind)}
             />
           ))}
         </ListGroup>
       </Sheet>
+      <BringInSheet target={place} targetName={placeName} visible={bringIn} onClose={() => setBringIn(false)} />
       <ItemFormSheet
         visible={form !== null}
         title={form === 'collection' ? 'New collection' : 'New book'}

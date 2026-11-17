@@ -4,9 +4,11 @@ import { View } from 'react-native';
 
 import { Button, EmptyState, IconButton, Screen, Text } from '@/components/ui';
 import { AddMenu, ItemActions, NoteRow, SectionHeader, type ActionTarget } from '@/features/library/components';
+import { BringInSheet } from '@/features/library/components/BringInSheet';
 import { useBook, useCollection, usePages } from '@/features/library/queries';
 import { plural } from '@/lib/dates';
 import { ItemLockGate } from '@/features/lock';
+import { ItemTagRow } from '@/features/tags/components/ItemTagRow';
 import { createStyles, itemColorValue, useTheme } from '@/theme';
 
 export default function BookScreen() {
@@ -17,6 +19,7 @@ export default function BookScreen() {
   const { data: collection } = useCollection(book?.collectionId ?? '');
   const pages = usePages(id);
   const [target, setTarget] = useState<ActionTarget | null>(null);
+  const [bringIn, setBringIn] = useState(false);
 
   if (loaded && !book) {
     return (
@@ -48,6 +51,7 @@ export default function BookScreen() {
               {collection ? `Book in ${collection.name}` : 'Book'}
             </Text>
             <Text variant="title">{book.name}</Text>
+          <ItemTagRow kind="book" id={id} />
             <Text variant="caption" color="textMuted">
               {plural(pages.data.length, 'page')}
             </Text>
@@ -86,10 +90,12 @@ export default function BookScreen() {
               </Text>
             </View>
           ) : null}
+          <Button title="Add existing notes as pages" icon="enter-outline" variant="ghost" onPress={() => setBringIn(true)} />
           <View style={styles.fabSpace} />
         </Screen>
-        <AddMenu kinds={['page']} place={{ bookId: id }} />
+        <AddMenu kinds={['page']} place={{ bookId: id }} placeName={book.name} />
       </ItemLockGate>
+      <BringInSheet target={{ bookId: id }} targetName={book.name} visible={bringIn} onClose={() => setBringIn(false)} />
       <ItemActions
         target={target}
         onClose={() => setTarget(null)}

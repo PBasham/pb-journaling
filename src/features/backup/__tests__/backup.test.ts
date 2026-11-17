@@ -121,7 +121,7 @@ describe('encrypted backups', () => {
   });
 
   it('needs a long enough passphrase', async () => {
-    const backup = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
+    const backup = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], bookTags: [], collectionTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
     await expect(encryptBackup(backup, 'short', 10)).rejects.toThrow('at least 8');
   });
 });
@@ -130,7 +130,7 @@ describe('parseBackup', () => {
   it('refuses other files, damaged files and newer versions', () => {
     expect(() => parseBackup('not json', SCHEMA_VERSION)).toThrow('not a PB Notes backup');
     expect(() => parseBackup('{"app":"other"}', SCHEMA_VERSION)).toThrow('not a PB Notes backup');
-    const good = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
+    const good = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], bookTags: [], collectionTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
     expect(() => parseBackup(JSON.stringify({ ...good, schemaVersion: SCHEMA_VERSION + 1 }), SCHEMA_VERSION)).toThrow(
       'newer version',
     );

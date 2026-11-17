@@ -14,6 +14,7 @@ import {
 } from '@/features/library/components';
 import { useBooks, useCollection, useNotes, useSort } from '@/features/library/queries';
 import { ItemLockGate } from '@/features/lock';
+import { ItemTagRow } from '@/features/tags/components/ItemTagRow';
 import { createStyles, itemColorValue, useTheme } from '@/theme';
 
 export default function CollectionScreen() {
@@ -59,6 +60,7 @@ export default function CollectionScreen() {
               Collection
             </Text>
             <Text variant="title">{collection.name}</Text>
+          <ItemTagRow kind="collection" id={id} />
           </View>
   
           {empty ? (
@@ -96,7 +98,7 @@ export default function CollectionScreen() {
           ) : null}
           <View style={styles.fabSpace} />
         </Screen>
-        <AddMenu kinds={['note', 'book']} place={{ collectionId: id }} />
+        <AddMenu kinds={['note', 'book', 'existing']} place={{ collectionId: id }} placeName={collection.name} />
       </ItemLockGate>
       <ItemActions
         target={target}

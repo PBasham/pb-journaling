@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, IconButton, Screen, Text } from '@/components/ui';
@@ -20,9 +20,7 @@ import { cleanOrphanPhotos } from '@/features/photos/cleanup';
 import { removePhoto } from '@/features/photos/photos';
 import { useNotePhotos } from '@/features/photos/queries';
 import { PHOTOS_SUPPORTED } from '@/features/photos/storage';
-import { TagChip } from '@/features/tags/components/TagChip';
-import { TagPickerSheet } from '@/features/tags/components/TagPickerSheet';
-import { useNoteTags } from '@/features/tags/queries';
+import { ItemTagRow } from '@/features/tags/components/ItemTagRow';
 import { TemplateRow } from '@/features/templates/components/TemplateRow';
 import { templateDoc } from '@/features/templates/templates';
 import { run } from '@/lib/errors';
@@ -58,10 +56,8 @@ function NoteEditor({ initial, current, isNew }: { initial: Note; current: Note;
   const editorRef = useRef<RichTextEditorHandle>(null);
   const [title, setTitle] = useState(initial.title);
   const [target, setTarget] = useState<ActionTarget | null>(null);
-  const [tagsOpen, setTagsOpen] = useState(false);
   const [photoSheet, setPhotoSheet] = useState(false);
   const [viewing, setViewing] = useState<number | null>(null);
-  const { data: tags } = useNoteTags(initial.id);
   const { data: photos } = useNotePhotos(initial.id);
   // Templates are offered on a new note until something is written in it.
   const [offerTemplates, setOfferTemplates] = useState(isNew && isDocEmpty(parseDoc(initial.contentJson)));
@@ -123,12 +119,7 @@ function NoteEditor({ initial, current, isNew }: { initial: Note; current: Note;
             style={styles.title}
           />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always" contentContainerStyle={styles.tags}>
-          {tags.map((tag) => (
-            <TagChip key={tag.id} name={tag.name} color={tag.color} onPress={() => setTagsOpen(true)} />
-          ))}
-          <TagChip name={tags.length ? 'Edit' : 'Add tag'} add onPress={() => setTagsOpen(true)} accessibilityLabel={tags.length ? 'Edit tags' : 'Add tag'} />
-        </ScrollView>
+        <ItemTagRow kind="note" id={initial.id} />
       </View>
       {photos.length ? (
         <View style={styles.photos}>
@@ -152,7 +143,6 @@ function NoteEditor({ initial, current, isNew }: { initial: Note; current: Note;
       <View style={styles.editor}>
         <RichTextEditor ref={editorRef} initialDoc={parseDoc(initial.contentJson)} onChange={onDoc} />
       </View>
-      <TagPickerSheet noteId={initial.id} visible={tagsOpen} onClose={() => setTagsOpen(false)} />
       <AddPhotoSheet noteId={initial.id} visible={photoSheet} onClose={() => setPhotoSheet(false)} />
       <PhotoViewer
         key={viewing ?? -1}
@@ -207,6 +197,5 @@ const useStyles = createStyles((t) => ({
   },
   // No side padding: the editor pads its own text, so the toolbar can run edge to edge.
   editor: { flex: 1, paddingTop: t.spacing.sm },
-  tags: { gap: t.spacing.xs, paddingVertical: t.spacing.xs },
   photos: { paddingTop: t.spacing.sm },
 }));

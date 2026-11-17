@@ -25,6 +25,9 @@ import {
   moveBook,
   moveNote,
   deleteForever,
+  listMoveCandidates,
+  moveItemsInto,
+  takeOut,
   discardNote,
   duplicateBook,
   duplicateNote,
@@ -349,6 +352,71 @@ describe('recently deleted', () => {
     expect((await listCollections(db))[0].noteCount).toBe(0);
     expect((await listFavorites(db)).notes).toEqual([]);
     expect((await searchLibrary(db, 'findme')).notes).toEqual([]);
+  });
+});
+
+describe('bringing things in and taking them out', () => {
+  it('offers books, loose notes and pages from elsewhere for a collection', async () => {
+    const db = createTestDb();
+    const here = await createCollection(db, { name: 'Here', color: 'slate' });
+    const there = await createCollection(db, { name: 'There', color: 'slate' });
+    await createBook(db, { name: 'Inside', color: 'slate', collectionId: here });
+    const outside = await createBook(db, { name: 'Outside', color: 'slate', collectionId: there });
+    await createNote(db, { bookId: outside }, { title: 'a page' });
+    await createNote(db, { collectionId: here }, { title: 'already here' });
+    await createNote(db, { collectionId: null }, { title: 'loose' });
+
+    const found = await listMoveCandidates(db, { collectionId: here });
+    expect(found.map((c) => `${c.kind}:${c.name}:${c.where}`).sort()).toEqual([
+      'book:Outside:There',
+      'note:a page:Page in Outside',
+      'note:loose:Library',
+    ]);
+  });
+
+  it('offers notes and other pages for a book, never books', async () => {
+    const db = createTestDb();
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
+    const other = await createBook(db, { name: 'Other', color: 'slate', collectionId: null });
+    await createNote(db, { bookId: book }, { title: 'mine' });
+    await createNote(db, { bookId: other }, { title: 'theirs' });
+    await createNote(db, { collectionId: null }, { title: 'loose' });
+    const found = await listMoveCandidates(db, { bookId: book });
+    expect(found.map((c) => c.name).sort()).toEqual(['loose', 'theirs']);
+    expect(found.every((c) => c.kind === 'note')).toBe(true);
+  });
+
+  it('moves several things in at once, pages in order', async () => {
+    const db = createTestDb();
+    const col = await createCollection(db, { name: 'C', color: 'slate' });
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
+    const n1 = await createNote(db, { collectionId: null }, { title: 'one' });
+    const n2 = await createNote(db, { collectionId: null }, { title: 'two' });
+    await moveItemsInto(db, { bookId: book }, [
+      { kind: 'note', id: n2 },
+      { kind: 'note', id: n1 },
+    ]);
+    expect((await listPages(db, book)).map((p) => p.title)).toEqual(['two', 'one']);
+    await moveItemsInto(db, { collectionId: col }, [
+      { kind: 'book', id: book },
+      { kind: 'note', id: n1 },
+    ]);
+    expect((await listBooks(db, col)).map((b) => b.name)).toEqual(['B']);
+    expect((await listNotes(db, col)).map((n) => n.title)).toEqual(['one']);
+    expect((await listPages(db, book)).map((p) => p.title)).toEqual(['two']);
+  });
+
+  it('takes a page out to its book\'s collection, and a book or note out to the Library', async () => {
+    const db = createTestDb();
+    const col = await createCollection(db, { name: 'C', color: 'slate' });
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: col });
+    const page = await createNote(db, { bookId: book }, { title: 'page' });
+    await takeOut(db, 'note', page);
+    expect(await getNote(db, page)).toMatchObject({ bookId: null, collectionId: col });
+    await takeOut(db, 'note', page);
+    expect(await getNote(db, page)).toMatchObject({ bookId: null, collectionId: null });
+    await takeOut(db, 'book', book);
+    expect((await getBook(db, book))?.collectionId).toBeNull();
   });
 });
 

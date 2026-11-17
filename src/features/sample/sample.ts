@@ -11,7 +11,7 @@ import { itemColorNames } from '@/theme/tokens';
 
 import { doc, h, hr, ol, p, quote, tasks, ul } from '../editor/build';
 import { createBook, createCollection, createNote, updateBook, updateCollection, updateNote } from '../library/library';
-import { findOrCreateTag, setNoteTags } from '../tags/tags';
+import { findOrCreateTag, setItemTags, setNoteTags } from '../tags/tags';
 
 /** A small, realistic library: collections, books with pages, loose notes, tags, a favorite and a pin. */
 export async function createSampleLibrary(db: Database): Promise<void> {
@@ -21,6 +21,7 @@ export async function createSampleLibrary(db: Database): Promise<void> {
 
   const recipes = await createCollection(db, { name: 'Recipes', color: 'orange' });
   await updateCollection(db, recipes, { isFavorite: true });
+  await setItemTags(db, 'collection', recipes, [recipe.id]);
 
   const weeknight = await createBook(db, { name: 'Weeknight dinners', color: 'green', collectionId: recipes });
   const pages: [string, ReturnType<typeof doc>][] = [
@@ -74,6 +75,7 @@ export async function createSampleLibrary(db: Database): Promise<void> {
 
   const trip = await createBook(db, { name: 'Maine trip', color: 'teal', collectionId: null });
   await updateBook(db, trip, { isFavorite: true });
+  await setItemTags(db, 'book', trip, [travel.id]);
   for (const [title, body] of [
     ['Plan', doc(h(2, 'Places'), ul('Acadia', 'Bar Harbor', 'Portland'), hr(), h(3, 'Packing'), tasks('Hiking boots', 'Rain jacket'))],
     ['Day 1', doc(p('Drove up the coast. Lobster roll in Portland was worth the line.'))],
@@ -150,6 +152,8 @@ export async function createOldDeletedNote(db: Database, days: number): Promise<
 export async function eraseLibrary(db: Database): Promise<void> {
   db.transaction((tx) => {
     tx.delete(schema.noteTags).run();
+    tx.delete(schema.bookTags).run();
+    tx.delete(schema.collectionTags).run();
     tx.delete(schema.notePhotos).run();
     tx.delete(schema.notes).run();
     tx.delete(schema.books).run();
