@@ -1,1 +1,0 @@
-export { default as useMyCollections } from "./useMyCollections"
