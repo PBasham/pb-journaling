@@ -14,7 +14,9 @@ import { View } from 'react-native';
 
 import { createStyles, useTheme, type Theme } from '@/theme';
 
+import { BlocksBridge } from './blocksBridge';
 import type { Doc } from './document';
+import { editorHtml } from './editorHtml';
 import { FormatToolbar } from './FormatToolbar';
 
 type BridgeTheme = NonNullable<Parameters<typeof useEditorBridge>[0]>['theme'];
@@ -25,6 +27,8 @@ export interface RichTextEditorHandle {
    * read this before leaving to catch the last few words. Null if the editor doesn't answer in time.
    */
   getDoc: () => Promise<Doc | null>;
+  /** Replaces everything in the editor (starting from a template). */
+  setDoc: (doc: Doc) => void;
   focus: () => void;
 }
 
@@ -55,10 +59,12 @@ export function RichTextEditor({ initialDoc, onChange, placeholder = 'Start writ
     webviewContainer: { backgroundColor: theme.colors.background },
   };
   const editor = useEditorBridge({
+    // Our own editor page (editor-web/): TenTap's editor plus code blocks and dividers.
+    customSource: editorHtml,
     initialContent: initialDoc,
     autofocus,
     avoidIosKeyboard: true,
-    bridgeExtensions: [...TenTapStartKit, PlaceholderBridge.configureExtension({ placeholder })],
+    bridgeExtensions: [...TenTapStartKit, PlaceholderBridge.configureExtension({ placeholder }), BlocksBridge],
     // Cast through unknown: checking EditorTheme against the library's RecursivePartial type
     // exceeds TypeScript's depth limit. The value is a full EditorTheme, so it is valid.
     theme: editorTheme as unknown as BridgeTheme,
@@ -76,6 +82,7 @@ export function RichTextEditor({ initialDoc, onChange, placeholder = 'Start writ
           editor.getJSON().then((json) => json as Doc),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), GET_DOC_TIMEOUT_MS)),
         ]).catch(() => null),
+      setDoc: (doc) => editor.setContent(doc),
       focus: () => editor.focus(),
     }),
     [editor],
@@ -160,6 +167,10 @@ function editorCss(t: Theme): string {
     .ProseMirror ul[data-type="taskList"] li > div { flex: 1; }
     .ProseMirror ul[data-type="taskList"] input[type="checkbox"] { width: 1.05em; height: 1.05em; accent-color: ${c.primary}; }
     .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div { color: ${c.textMuted}; text-decoration: line-through; }
+    .ProseMirror pre { background: ${c.surfaceMuted}; border-radius: ${t.radius.sm}px; padding: ${t.spacing.md}px; overflow-x: auto; margin: 0 0 0.6em; }
+    .ProseMirror pre code { background: none; padding: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; line-height: 1.5; white-space: pre; }
+    .ProseMirror hr { border: none; border-top: 2px solid ${c.border}; margin: 1.2em 0; }
+    .ProseMirror hr.ProseMirror-selectednode { border-top-color: ${c.primary}; }
     .ProseMirror mark { border-radius: 3px; padding: 0 1px; color: inherit; }
     .ProseMirror blockquote { border-left: 3px solid ${c.primary}; margin-left: 0; padding-left: ${t.spacing.md}px; color: ${c.textMuted}; }
     .ProseMirror a { color: ${c.primary}; }

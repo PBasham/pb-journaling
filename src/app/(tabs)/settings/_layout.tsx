@@ -20,6 +20,9 @@ export default function SettingsLayout() {
       <Stack.Screen name="lock-setup" options={{ title: '' }} />
       <Stack.Screen name="backup" options={{ title: 'Backup & restore' }} />
       <Stack.Screen name="trash" options={{ title: 'Recently deleted' }} />
+      <Stack.Screen name="tags" options={{ title: 'Tags' }} />
+      <Stack.Screen name="templates" options={{ title: 'Templates' }} />
+      <Stack.Screen name="developer" options={{ title: 'Developer tools' }} />
     </Stack>
   );
 }

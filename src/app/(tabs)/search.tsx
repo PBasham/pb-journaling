@@ -1,13 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { EmptyState, Screen, Text } from '@/components/ui';
 import { useDb } from '@/db';
 import { useLive } from '@/db/useLive';
 import { SectionHeader } from '@/features/library/components';
 import { searchLibrary, type SearchResults } from '@/features/library/library';
+import { TagChip } from '@/features/tags/components/TagChip';
+import { useTagsWithCounts } from '@/features/tags/queries';
 import { createStyles, itemColorValue, useTheme } from '@/theme';
 
 const DEBOUNCE_MS = 200;
@@ -19,13 +21,23 @@ export default function SearchScreen() {
   const theme = useTheme();
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
+  const [tagId, setTagId] = useState<string | null>(null);
+  const { data: tags } = useTagsWithCounts();
+  const usedTags = tags.filter((t) => t.count > 0);
+  const activeTag = usedTags.find((t) => t.id === tagId) ?? null;
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(text.trim()), DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [text]);
 
-  const { data, loaded } = useLive(() => searchLibrary(db, query), ['collections', 'books', 'notes'], [db, query], empty);
+  const { data, loaded } = useLive(
+    () => searchLibrary(db, query, { tagId: activeTag?.id }),
+    ['collections', 'books', 'notes', 'note_tags'],
+    [db, query, activeTag?.id],
+    empty,
+  );
+  const searching = !!query || !!activeTag;
   const total = data.collections.length + data.books.length + data.notes.length;
 
   return (
@@ -50,14 +62,33 @@ export default function SearchScreen() {
         ) : null}
       </View>
 
-      {!query ? (
+      {usedTags.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tags}>
+          {usedTags.map((tag) => (
+            <TagChip
+              key={tag.id}
+              name={tag.name}
+              color={tag.color}
+              selected={tag.id === activeTag?.id}
+              accessibilityLabel={`Filter by ${tag.name}`}
+              onPress={() => setTagId(tag.id === activeTag?.id ? null : tag.id)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {!searching ? (
         <EmptyState
           icon="search-outline"
           title="Search your library"
-          message="Finds collections, books, pages and notes. Locked items are never searched."
+          message="Finds collections, books, pages and notes, or tap a tag. Locked items are never searched."
         />
       ) : loaded && total === 0 ? (
-        <EmptyState icon="search-outline" title={`Nothing found for “${query}”`} message="Locked items are not searched." />
+        <EmptyState
+          icon="search-outline"
+          title={query ? `Nothing found for “${query}”` : `Nothing tagged #${activeTag?.name ?? ''}`}
+          message="Locked items are not searched."
+        />
       ) : null}
 
       {data.collections.length ? (
@@ -157,6 +188,7 @@ const useStyles = createStyles((t) => ({
   },
   input: { ...t.typography.body, flex: 1, color: t.colors.text, paddingVertical: t.spacing.md },
   section: { gap: t.spacing.sm },
+  tags: { gap: t.spacing.xs },
   row: {
     flexDirection: 'row',
     gap: t.spacing.md,

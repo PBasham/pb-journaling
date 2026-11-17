@@ -5,6 +5,9 @@ import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Sheet, Text, TextField } from '@/components/ui';
 import { createStyles, useTheme } from '@/theme';
+
+import { blocksState } from './blocksBridge';
+import type { BlocksInstance } from './blocksProtocol';
 import { highlightColor } from '@/theme/tokens';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -17,6 +20,8 @@ type Level = 1 | 2 | 3;
 export function FormatToolbar({ editor }: { editor: EditorBridge }) {
   const styles = useStyles();
   const state = useBridgeState(editor);
+  const blocks = blocksState(state);
+  const blockCommands = editor as EditorBridge & BlocksInstance;
   const [stylesOpen, setStylesOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [url, setUrl] = useState('');
@@ -70,6 +75,14 @@ export function FormatToolbar({ editor }: { editor: EditorBridge }) {
           <View style={styles.divider} />
           <Tool icon="format-strikethrough" label="Strikethrough" active={state.isStrikeActive} disabled={!state.canToggleStrike} onPress={() => editor.toggleStrike()} />
           <Tool icon="code-tags" label="Inline code" active={state.isCodeActive} disabled={!state.canToggleCode} onPress={() => editor.toggleCode()} />
+          <Tool
+            icon="code-braces-box"
+            label="Code block"
+            active={blocks.isCodeBlockActive}
+            disabled={!blocks.canToggleCodeBlock}
+            onPress={() => blockCommands.toggleCodeBlock()}
+          />
+          <Tool icon="minus" label="Divider" disabled={!blocks.canInsertDivider} onPress={() => blockCommands.insertDivider()} />
           <Tool
             icon="marker"
             label="Highlight"

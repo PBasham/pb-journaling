@@ -22,6 +22,13 @@
       "when": 1794877816715,
       "tag": "0002_pins_and_trash",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794879290432,
+      "tag": "0003_tags_templates_photos",
+      "breakpoints": true
     }
   ]
 }

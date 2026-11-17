@@ -18,6 +18,7 @@ import {
   listFavorites,
   listNotes,
   listPages,
+  listRecentlyOpened,
   listTrash,
   setSetting,
   type BookWithCounts,
@@ -119,4 +120,10 @@ export function useDestinations() {
 export function useTrash() {
   const db = useDb();
   return useLive<TrashItem[]>(() => listTrash(db), ALL, [db], []);
+}
+
+/** Notes opened most recently, for "Continue writing" (live). */
+export function useRecentlyOpened() {
+  const db = useDb();
+  return useLive<Note[]>(() => listRecentlyOpened(db, 8), ['notes'], [db], []);
 }

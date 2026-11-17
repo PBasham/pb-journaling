@@ -10,6 +10,8 @@ import { createStyles } from '@/theme';
 import migrations from '../../drizzle/migrations';
 
 import { purgeOldTrash } from '@/features/library/library';
+import { cleanOrphanPhotos } from '@/features/photos/cleanup';
+import { seedTemplates } from '@/features/templates/templates';
 
 import * as schema from './schema';
 
@@ -67,6 +69,13 @@ async function initializeDatabase(sqlite: SQLiteDatabase) {
   await migrate(db, migrations);
   // Anything in Recently deleted for more than 30 days is removed for good.
   await purgeOldTrash(db);
+  await seedTemplates(db);
+  // Photo files no note uses any more (deleted for good, or removed) are cleaned up.
+  try {
+    await cleanOrphanPhotos(db);
+  } catch (error) {
+    console.warn('Photo clean up failed', error);
+  }
 }
 
 function OpenFailed({ error, onRetry }: { error: unknown; onRetry: () => void }) {

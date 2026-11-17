@@ -40,10 +40,18 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - [x] Recently deleted: deletes are kept 30 days, with restore, delete for good and empty
 - [x] Own icon, adaptive icon and splash (bookshelf), replacing the Healthy Habits placeholders
 - [x] Privacy policy draft (`docs/privacy-policy.md`) and Play Store listing draft (`docs/store-listing.md`)
-- [ ] Test drag to reorder, biometrics, share sheet and file picker on a real Android phone
+- [x] Example library: a button on the empty Library adds Recipes, Work, a trip book, tags, a favorite and a pin
+- [x] Developer tools (development build only): counts, example library, 1,000 page test data, old deleted notes, clean up, remove lock, erase
+- [x] Share a note as Markdown text, duplicate notes, pages and whole books, note info (words, reading time, dates, where)
+- [x] Continue writing: the notes opened last, at the top of the Library
+- [x] Custom editor page (`editor-web/`) with code blocks and dividers
+- [x] Templates: five built in (Recipe, Meeting notes, Daily log, Checklist, Book notes), save any note as one, offered on new notes
+- [x] Tags on notes and pages, tag chips under the title, search by tag, manage in Settings (rename merges)
+- [x] Photos in notes: camera or gallery, private shrunk copies, full screen viewer, included in backups (zip)
+- [ ] Test drag to reorder, biometrics, share sheet, file picker, camera and photos on a real Android phone
 - [ ] Pick the app name (then update `app.json`, the listing and the policy)
 - [ ] Owner checklist before publishing: contact email (privacy policy), developer name, package id
-- [ ] Ideas: note templates, code blocks and dividers in the editor (needs a custom editor build)
+- [ ] Ideas: tags on books and collections, photos inline in the text, home screen widget
 
 ## Decisions log
 
@@ -58,3 +66,7 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - 2026-11-16: Deleting moves items to Recently deleted (a `deleted_at` time) instead of removing rows. Things deleted together share the time, so they restore together. Undo restores from there. A blank note made by mistake skips it.
 - 2026-11-16: The editor keeps TenTap's built in editor page, with our own toolbar. Code blocks and dividers would need a custom editor build (like Healthy Habits' `editor-web/`), so they wait.
 - 2026-11-16: Highlight color is one see-through yellow saved in the note, so it reads in light and dark.
+- 2026-11-16: The editor is now our own page (`editor-web/`, like Healthy Habits) so it can have code blocks and dividers. Rebuild it with `npm run editor:build`.
+- 2026-11-16: Tags are on notes and pages only for now; search filters by them. Restoring a backup by adding joins tags that share a name.
+- 2026-11-16: Photos sit in a strip on the note (not inline in the text) and are files in app storage. Copies of a note share files; unused files are removed at startup. Backups with photos are a zip; encrypted backups encrypt the photos too.
+- 2026-11-16: Developer tools only show in the development build or a dev server session.

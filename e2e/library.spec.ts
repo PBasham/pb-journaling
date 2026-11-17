@@ -31,12 +31,12 @@ test('creates a collection with a book of pages and a loose note', async ({ page
     await editable.pressSequentially(body);
     await page.waitForTimeout(1000);
     await tapBack(page);
-    await expect(page.getByText(title)).toBeVisible();
+    await expect(page.getByText(title).filter({ visible: true }).first()).toBeVisible();
   }
   await expect(page.getByText('2 pages', { exact: true }).filter({ visible: true })).toBeVisible();
 
   // Reorder: move the second page up
-  await page.getByText('Tofu scramble').click({ delay: 800 });
+  await page.getByRole('button', { name: /^2\., Tofu scramble/ }).click({ delay: 800 });
   await button(page, 'Move page up').click();
   await expect(page.getByRole('button', { name: /^1\., Tofu scramble/ })).toBeVisible();
 
@@ -52,11 +52,11 @@ test('creates a collection with a book of pages and a loose note', async ({ page
   await page.getByRole('textbox', { name: 'Title' }).fill('Groceries');
   await page.waitForTimeout(1000);
   await tapBack(page);
-  await expect(page.getByRole('button', { name: /Groceries/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Groceries/ })).toBeVisible();
 
   // It survives a reload
   await open(page, '/');
-  await expect(page.getByRole('button', { name: /Groceries/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Groceries/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Collection Recipes/ })).toBeVisible();
 
   await page.screenshot({ path: 'test-results/library.png' });
@@ -76,11 +76,11 @@ test('moves a note into a book and deletes with undo', async ({ page }) => {
   await page.waitForTimeout(1000);
   await tapBack(page);
 
-  await page.getByRole('button', { name: /Stray thought/ }).click({ delay: 800 });
+  await page.getByRole('button', { name: /^Stray thought/ }).click({ delay: 800 });
   await button(page, 'Move to…').click();
   await button(page, 'Journal').click();
   await expect(page.getByText('Moved to Journal.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Stray thought/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Stray thought/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Book Journal, 1 page/ })).toBeVisible();
 
   await page.getByRole('button', { name: /Book Journal/ }).click({ delay: 800 });

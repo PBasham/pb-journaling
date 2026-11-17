@@ -15,11 +15,23 @@ export const BACKUP_KDF_ITERATIONS = 100_000;
 export const PASSPHRASE_MIN = 8;
 
 /** Tables in insert order: parents before the rows that reference them. */
-export const backupTables = ['collections', 'books', 'notes', 'settings'] as const;
+export const backupTables = [
+  'collections',
+  'books',
+  'notes',
+  'tags',
+  'noteTags',
+  'templates',
+  'notePhotos',
+  'settings',
+] as const;
 
 export type BackupTable = (typeof backupTables)[number];
 export type PortableRow = Record<string, unknown>;
 export type BackupData = Record<BackupTable, PortableRow[]>;
+
+/** Tables added after the first backup format. Older backups don't have them; they restore empty. */
+const LATER_TABLES = new Set<BackupTable>(['tags', 'noteTags', 'templates', 'notePhotos']);
 
 interface BackupHeader {
   app: typeof BACKUP_APP;
@@ -48,7 +60,7 @@ export type BackupFile = PlainBackup | EncryptedBackup;
 /** A problem with a backup file, with a message to show the person. */
 export class BackupError extends Error {}
 
-const DATE_COLUMNS = new Set(['createdAt', 'updatedAt', 'deletedAt']);
+const DATE_COLUMNS = new Set(['createdAt', 'updatedAt', 'deletedAt', 'lastOpenedAt']);
 
 /** Database row to JSON safe row. Dates become epoch milliseconds. */
 export function toPortableRow(row: object): PortableRow {
@@ -148,6 +160,7 @@ export function parseBackup(text: string, currentSchemaVersion: number): BackupF
 function validateData(data: unknown): asserts data is BackupData {
   if (!isObject(data)) throw new BackupError('This backup file is damaged.');
   for (const table of backupTables) {
+    if (data[table] === undefined && LATER_TABLES.has(table)) data[table] = [];
     const rows = data[table];
     if (!Array.isArray(rows) || !rows.every(isObject)) throw new BackupError('This backup file is damaged.');
   }
@@ -165,5 +178,6 @@ export function summarizeBackup(data: BackupData) {
     books: data.books.length,
     pages,
     notes: data.notes.length - pages,
+    photos: data.notePhotos.length,
   };
 }

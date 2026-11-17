@@ -48,6 +48,9 @@ const lightColorValues = {
   danger: palette.red600,
   shadow: '#000000',
   overlay: 'rgba(20, 18, 16, 0.5)',
+  /** Full screen photo viewer: always black with white controls, like a photo app. */
+  photoBackground: '#000000',
+  onPhoto: '#FFFFFF',
 
   tabBar: palette.paper0,
   tabActive: palette.indigo600,
@@ -76,6 +79,9 @@ export const darkColors: ThemeColors = {
   danger: palette.red400,
   shadow: '#000000',
   overlay: 'rgba(0, 0, 0, 0.6)',
+  /** Full screen photo viewer: always black with white controls, like a photo app. */
+  photoBackground: '#000000',
+  onPhoto: '#FFFFFF',
 
   tabBar: palette.night900,
   tabActive: palette.indigo400,

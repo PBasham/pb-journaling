@@ -5,7 +5,9 @@ import { Button, ConfirmDialog, ListGroup, ListRow, Screen, Section, Sheet, Text
 import { useDb } from '@/db';
 import type { Book, Collection, Note } from '@/db/schema';
 import { countExisting, readAllData, restoreData, SCHEMA_VERSION, type RestoreMode } from '@/features/backup/database';
-import { pickBackupText, shareBackup, shareMarkdown } from '@/features/backup/files';
+import { backupKey, buildArchive, openBackupBytes, type OpenedArchive } from '@/features/backup/archive';
+import { pickBackupBytes, shareBackup, shareMarkdown } from '@/features/backup/files';
+import { collectPhotos, removeUnusedPhotos, restorePhotos } from '@/features/backup/photoBackup';
 import {
   BackupError,
   buildBackup,
@@ -30,6 +32,15 @@ interface Pending {
   data: BackupData;
   exportedAt: string;
   existing: number;
+  archive: OpenedArchive;
+  /** For an encrypted backup's photos. */
+  key: Uint8Array | null;
+}
+
+/** A picked encrypted backup, waiting for its passphrase. */
+interface Locked {
+  file: EncryptedBackup;
+  archive: OpenedArchive;
 }
 
 export default function BackupScreen() {
@@ -44,7 +55,7 @@ export default function BackupScreen() {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const [locked, setLocked] = useState<EncryptedBackup | null>(null);
+  const [locked, setLocked] = useState<Locked | null>(null);
   const [openPassphrase, setOpenPassphrase] = useState('');
   const [openError, setOpenError] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -71,13 +82,19 @@ export default function BackupScreen() {
   const exportBackup = async () => {
     setBusy(true);
     try {
-      const plain = buildBackup(await readAllData(db), SCHEMA_VERSION);
+      const { data, photos, missing } = await collectPhotos(await readAllData(db));
+      const plain = buildBackup(data, SCHEMA_VERSION);
       const file = protect ? await encryptBackup(plain, passphrase) : plain;
+      // With photos the backup is a zip; without, a single JSON file.
+      const content = photos.length
+        ? buildArchive(file, photos, file.encrypted ? await backupKey(file, passphrase) : null)
+        : JSON.stringify(file);
       setExportOpen(false);
       setPassphrase('');
       setConfirm('');
-      await away(() => shareBackup(JSON.stringify(file), file.encrypted));
+      await away(() => shareBackup(content, file.encrypted));
       setLastBackupAt(Date.now());
+      if (missing) showInfo(`${plural(missing, 'photo')} couldn't be found and were left out.`);
     } finally {
       setBusy(false);
     }
@@ -98,25 +115,26 @@ export default function BackupScreen() {
     await away(() => shareMarkdown(markdown));
   };
 
-  const prepare = async (data: BackupData, exportedAt: string) => {
-    setPending({ data, exportedAt, existing: await countExisting(db, data) });
+  const prepare = async (data: BackupData, exportedAt: string, archive: OpenedArchive, key: Uint8Array | null) => {
+    setPending({ data, exportedAt, existing: await countExisting(db, data), archive, key });
   };
 
   const pickFile = async () => {
-    let text: string | null = null;
+    let bytes: Uint8Array | null = null;
     await away(async () => {
-      text = await pickBackupText();
+      bytes = await pickBackupBytes();
     });
-    if (text === null) return;
+    if (bytes === null) return;
     try {
-      const parsed = parseBackup(text, SCHEMA_VERSION);
+      const archive = openBackupBytes(bytes);
+      const parsed = parseBackup(archive.text, SCHEMA_VERSION);
       if (parsed.encrypted) {
         setOpenPassphrase('');
         setOpenError(null);
-        setLocked(parsed);
+        setLocked({ file: parsed, archive });
         return;
       }
-      await prepare(parsed.data, parsed.exportedAt);
+      await prepare(parsed.data, parsed.exportedAt, archive, null);
     } catch (error) {
       if (error instanceof BackupError) reportError(error, error.message);
       else throw error;
@@ -127,9 +145,10 @@ export default function BackupScreen() {
     if (!locked) return;
     setBusy(true);
     try {
-      const opened = await decryptBackup(locked, openPassphrase);
+      const opened = await decryptBackup(locked.file, openPassphrase);
+      const key = locked.archive.photos.size ? await backupKey(locked.file, openPassphrase) : null;
       setLocked(null);
-      await prepare(opened.data, opened.exportedAt);
+      await prepare(opened.data, opened.exportedAt, locked.archive, key);
     } catch (error) {
       if (error instanceof BackupError) setOpenError(error.message);
       else throw error;
@@ -143,7 +162,10 @@ export default function BackupScreen() {
     const counts = summarizeBackup(pending.data);
     setPending(null);
     setConfirmReplace(false);
-    await restoreData(db, pending.data, mode);
+    // Photos are written first, so no restored note points at a missing picture.
+    const data = restorePhotos(pending.data, pending.archive, pending.key);
+    await restoreData(db, data, mode);
+    if (mode === 'replace') await removeUnusedPhotos(db);
     showInfo(
       mode === 'replace'
         ? 'Your library now matches the backup.'
@@ -256,7 +278,8 @@ export default function BackupScreen() {
         {pending && summary ? (
           <Text color="textMuted">
             Made {formatWhen(new Date(pending.exportedAt))}. It has {plural(summary.collections, 'collection')},{' '}
-            {plural(summary.books, 'book')}, {plural(summary.pages, 'page')} and {plural(summary.notes, 'loose note')}.
+            {plural(summary.books, 'book')}, {plural(summary.pages, 'page')}, {plural(summary.notes, 'loose note')} and{' '}
+            {plural(summary.photos, 'photo')}.
             {pending.existing ? ` ${pending.existing} of these are already in your library.` : ''}
           </Text>
         ) : null}

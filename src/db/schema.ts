@@ -14,7 +14,7 @@
  * - Keep this file free of app imports: drizzle-kit loads it in Node.
  */
 import { sql } from 'drizzle-orm';
-import { check, index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { check, index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /** Shared by collections, books and notes. */
 const itemFlags = {
@@ -81,6 +81,8 @@ export const notes = sqliteTable(
     color: text('color').notNull().default('slate'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
+    /** When it was last opened, for "Continue writing". */
+    lastOpenedAt: integer('last_opened_at', { mode: 'timestamp_ms' }),
     ...itemFlags,
     ...timestamps,
   },
@@ -89,6 +91,65 @@ export const notes = sqliteTable(
     index('notes_book_idx').on(t.bookId, t.position),
     check('notes_one_parent', sql`${t.collectionId} is null or ${t.bookId} is null`),
   ],
+);
+
+/** Tags people put on notes and pages, used to filter search. */
+export const tags = sqliteTable(
+  'tags',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    color: text('color').notNull().default('slate'),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('tags_name_idx').on(sql`lower(${t.name})`)],
+);
+
+export const noteTags = sqliteTable(
+  'note_tags',
+  {
+    noteId: text('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.noteId, t.tagId] }), index('note_tags_tag_idx').on(t.tagId)],
+);
+
+/** Layouts a new note can start from. Built in ones are seeded by the app with fixed ids (`builtin-…`). */
+export const templates = sqliteTable('templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  /** Title the new note gets, or empty. */
+  title: text('title').notNull().default(''),
+  /** Rich text document (TipTap JSON string). */
+  contentJson: text('content_json').notNull(),
+  isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
+  ...timestamps,
+});
+
+/**
+ * Photos attached to a note. The image is a file in the app's private storage
+ * (`photos/<fileName>`); this row says which note it belongs to and in what order.
+ */
+export const notePhotos = sqliteTable(
+  'note_photos',
+  {
+    id: text('id').primaryKey(),
+    noteId: text('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    fileName: text('file_name').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    position: real('position').notNull().default(0),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('note_photos_note_idx').on(t.noteId, t.position)],
 );
 
 /** Small app settings (sort orders and the like), as JSON values by key. */
@@ -100,3 +161,6 @@ export const settings = sqliteTable('settings', {
 export type Collection = typeof collections.$inferSelect;
 export type Book = typeof books.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+export type Tag = typeof tags.$inferSelect;
+export type Template = typeof templates.$inferSelect;
+export type NotePhoto = typeof notePhotos.$inferSelect;

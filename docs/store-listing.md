@@ -30,11 +30,16 @@ ORGANIZE
 WRITE
 • A clean editor with titles, headings and subheadings
 • Bulleted lists, numbered lists and checklists, with indenting
+• Code blocks and dividers
+• Templates for recipes, meetings, daily logs and more, or save your own
+• Add photos from your camera or gallery
 • Bold, italic, underline, strikethrough, highlight, quotes, inline code and links
 • Saves as you type
 
 FIND
 • Search every title and every line you've written
+• Tags, and search by tag
+• Continue writing right where you left off
 • Sort by last updated, date created or name
 
 PRIVATE
@@ -46,7 +51,8 @@ PRIVATE
 SAFE
 • Recently deleted keeps anything you delete for 30 days
 • Undo right after a delete
-• Back up to a file, protected with a passphrase if you like, and restore it on any phone
+• Back up to a file, photos included, protected with a passphrase if you like
+• Share any note as text
 • Export everything as Markdown
 
 Light and dark themes with seven accent colors.

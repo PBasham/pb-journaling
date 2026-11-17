@@ -58,6 +58,14 @@
         {
           "faceIDPermission": "Unlock PB Notes with Face ID."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": false,
+          "cameraPermission": "Take photos to add to your notes. They stay on your phone.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

@@ -5,6 +5,9 @@ import { ListGroup, ListRow, Screen, Section, Text, Toggle } from '@/components/
 import { useTrash } from '@/features/library/queries';
 import { useLock } from '@/features/lock';
 import { useSetting } from '@/features/settings/settings';
+import { useTagsWithCounts } from '@/features/tags/queries';
+import { useTemplates } from '@/features/templates/queries';
+import { devToolsEnabled } from '@/lib/devTools';
 import { formatWhen } from '@/lib/dates';
 import { accents, isAccentName } from '@/theme';
 
@@ -17,6 +20,8 @@ export default function SettingsScreen() {
   const [lastBackupAt] = useSetting('lastBackupAt');
   const { config } = useLock();
   const { data: trash } = useTrash();
+  const { data: tags } = useTagsWithCounts();
+  const { data: templates } = useTemplates();
   const version = Constants.expoConfig?.version ?? '0.0.0';
   const accentLabel = accents[isAccentName(accent) ? accent : 'indigo'].label;
   const lockValue = !config ? 'Off' : config.method === 'pin' ? 'PIN' : 'Password';
@@ -36,6 +41,24 @@ export default function SettingsScreen() {
             title="Note previews"
             description="Show the first lines of a note under its title"
             right={<Toggle accessibilityLabel="Note previews" value={showPreviews} onValueChange={setShowPreviews} />}
+            divider
+          />
+        </ListGroup>
+      </Section>
+
+      <Section title="Organize">
+        <ListGroup>
+          <ListRow
+            icon="pricetags-outline"
+            title="Tags"
+            value={tags.length ? String(tags.length) : undefined}
+            onPress={() => router.push('/settings/tags')}
+          />
+          <ListRow
+            icon="document-text-outline"
+            title="Templates"
+            value={String(templates.length)}
+            onPress={() => router.push('/settings/templates')}
             divider
           />
         </ListGroup>
@@ -67,6 +90,19 @@ export default function SettingsScreen() {
           />
         </ListGroup>
       </Section>
+
+      {devToolsEnabled ? (
+        <Section title="Testing">
+          <ListGroup>
+            <ListRow
+              icon="construct-outline"
+              title="Developer tools"
+              description="Sample data, test data and resets"
+              onPress={() => router.push('/settings/developer')}
+            />
+          </ListGroup>
+        </Section>
+      ) : null}
 
       <Text variant="caption" color="textMuted" align="center">
         PB Notes {version}. Your notes stay on this device.

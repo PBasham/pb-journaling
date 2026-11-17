@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 
 import { notes } from '@/db/schema';
 
+import { findOrCreateTag, setNoteTags } from '../../tags/tags';
+
 import { createTestDb } from '../../../../test/testDb';
 import { plainTextToDoc } from '../../editor/document';
 import {
@@ -23,6 +25,12 @@ import {
   moveBook,
   moveNote,
   deleteForever,
+  discardNote,
+  duplicateBook,
+  duplicateNote,
+  listRecentlyOpened,
+  markOpened,
+  noteStats,
   emptyTrash,
   listTrash,
   purgeOldTrash,
@@ -231,6 +239,20 @@ describe('notes', () => {
   });
 });
 
+describe('discardNote', () => {
+  it('removes a blank note for good, but not one with tags', async () => {
+    const db = createTestDb();
+    const blank = await createNote(db, { collectionId: null });
+    await discardNote(db, blank);
+    expect(await getNote(db, blank)).toBeUndefined();
+    expect(await listTrash(db)).toEqual([]);
+    const tagged = await createNote(db, { collectionId: null });
+    await setNoteTags(db, tagged, [(await findOrCreateTag(db, 'keep')).id]);
+    await discardNote(db, tagged);
+    expect(await getNote(db, tagged)).toBeDefined();
+  });
+});
+
 describe('pinning', () => {
   it('lists pinned items first, whatever the sort', async () => {
     const db = createTestDb();
@@ -327,6 +349,38 @@ describe('recently deleted', () => {
     expect((await listCollections(db))[0].noteCount).toBe(0);
     expect((await listFavorites(db)).notes).toEqual([]);
     expect((await searchLibrary(db, 'findme')).notes).toEqual([]);
+  });
+});
+
+describe('copies, stats and recently opened', () => {
+  it('duplicates a page right after the original, and a whole book', async () => {
+    const db = createTestDb();
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
+    const a = await createNote(db, { bookId: book }, { title: 'A' });
+    await createNote(db, { bookId: book }, { title: 'C' });
+    await duplicateNote(db, a);
+    expect((await listPages(db, book)).map((p) => p.title)).toEqual(['A', 'A copy', 'C']);
+    const copy = await duplicateBook(db, book);
+    expect((await listPages(db, copy!)).map((p) => p.title)).toEqual(['A', 'A copy', 'C']);
+    expect((await listBooks(db, null)).map((b) => b.name).sort()).toEqual(['B', 'B copy']);
+  });
+
+  it('counts words and reading time', () => {
+    expect(noteStats('')).toEqual({ words: 0, characters: 0, readingMinutes: 0 });
+    expect(noteStats('one two\nthree')).toMatchObject({ words: 3, readingMinutes: 1 });
+  });
+
+  it('lists recently opened notes, newest first', async () => {
+    const db = createTestDb();
+    const a = await createNote(db, { collectionId: null }, { title: 'a' });
+    const b = await createNote(db, { collectionId: null }, { title: 'b' });
+    await createNote(db, { collectionId: null }, { title: 'never' });
+    await markOpened(db, a);
+    await new Promise((r) => setTimeout(r, 5));
+    await markOpened(db, b);
+    expect((await listRecentlyOpened(db)).map((n) => n.title)).toEqual(['b', 'a']);
+    await deleteNote(db, b);
+    expect((await listRecentlyOpened(db)).map((n) => n.title)).toEqual(['a']);
   });
 });
 

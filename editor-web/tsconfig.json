@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "lib": [
+      "DOM",
+      "ES2022"
+    ],
+    "types": [],
+    "paths": {
+      "@tiptap/react": [
+        "../node_modules/@10play/tentap-editor/node_modules/@tiptap/react"
+      ]
+    }
+  },
+  "include": [
+    "index.tsx",
+    "blocks.ts",
+    "../src/features/editor/blocksProtocol.ts"
+  ]
+}

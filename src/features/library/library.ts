@@ -331,8 +331,15 @@ export async function deleteNote(db: Database, id: string): Promise<void> {
   await db.update(schema.notes).set({ deletedAt: new Date() }).where(eq(schema.notes.id, id));
 }
 
-/** Removes a note right away, skipping Recently deleted. Only for a blank note made by mistake. */
+/**
+ * Removes a blank note made by mistake, skipping Recently deleted. A note with tags or photos isn't
+ * blank, so it stays.
+ */
 export async function discardNote(db: Database, id: string): Promise<void> {
+  const extras = await db.all<{ n: number }>(
+    sql`select (select count(*) from "note_tags" where note_id = ${id}) + (select count(*) from "note_photos" where note_id = ${id}) as n`,
+  );
+  if (Number(extras[0]?.n ?? 0) > 0) return;
   await db.delete(schema.notes).where(eq(schema.notes.id, id));
 }
 
@@ -463,6 +470,11 @@ export interface SearchResults {
   notes: (Note & { snippet: string })[];
 }
 
+function previewSnippet(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > 100 ? `${flat.slice(0, 100).trimEnd()}…` : flat;
+}
+
 /** A short piece of `text` around the first match, on one line. */
 export function snippetAround(text: string, query: string, radius = 50): string {
   const flat = text.replace(/\s+/g, ' ').trim();
@@ -477,20 +489,33 @@ export function snippetAround(text: string, query: string, radius = 50): string 
  * Finds collections, books and notes by name, title or text. Anything locked, or inside something
  * locked, is left out, so search never reveals what a lock hides.
  */
-export async function searchLibrary(db: Database, query: string, limit = 50): Promise<SearchResults> {
+export async function searchLibrary(
+  db: Database,
+  query: string,
+  options: { tagId?: string | null; limit?: number } = {},
+): Promise<SearchResults> {
   const q = query.trim();
-  if (!q) return { collections: [], books: [], notes: [] };
+  const { tagId, limit = 50 } = options;
+  if (!q && !tagId) return { collections: [], books: [], notes: [] };
   const pattern = likePattern(q);
   const like = (column: SQLiteColumn) => sql`${column} like ${pattern} escape '\\'`;
+  const tagged = tagId
+    ? sql`${schema.notes.id} in (select note_id from "note_tags" where tag_id = ${tagId})`
+    : undefined;
 
-  const collections = await db
+  // A tag filter is about notes, so collections and books drop out.
+  const collections = tagId
+    ? []
+    : await db
     .select()
     .from(schema.collections)
     .where(and(live(schema.collections), eq(schema.collections.isLocked, false), like(schema.collections.name)))
     .orderBy(sql`lower(${schema.collections.name})`)
     .limit(limit);
 
-  const bookRows = await db
+  const bookRows = tagId
+    ? []
+    : await db
     .select({ book: schema.books })
     .from(schema.books)
     .leftJoin(schema.collections, eq(schema.books.collectionId, schema.collections.id))
@@ -520,7 +545,8 @@ export async function searchLibrary(db: Database, query: string, limit = 50): Pr
         eq(schema.notes.isLocked, false),
         sql`coalesce(${schema.books.isLocked}, 0) = 0`,
         sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
-        or(like(schema.notes.title), like(schema.notes.contentText)),
+        q ? or(like(schema.notes.title), like(schema.notes.contentText)) : undefined,
+        tagged,
       ),
     )
     .orderBy(desc(schema.notes.updatedAt))
@@ -529,7 +555,7 @@ export async function searchLibrary(db: Database, query: string, limit = 50): Pr
   return {
     collections,
     books: bookRows.map((r) => r.book),
-    notes: noteRows.map(({ note }) => ({ ...note, snippet: snippetAround(note.contentText, q) })),
+    notes: noteRows.map(({ note }) => ({ ...note, snippet: q ? snippetAround(note.contentText, q) : previewSnippet(note.contentText) })),
   };
 }
 
@@ -579,6 +605,91 @@ async function touchParents(db: Database, place: { bookId: string | null; collec
   } else {
     await touchCollection(db, place.collectionId);
   }
+}
+
+// Copies, stats and recently opened --------------------------------------
+
+/** Copies a note (title gets " copy"), with its tags and photos, right after the original. */
+export async function duplicateNote(db: Database, id: string): Promise<string | null> {
+  const note = await getNote(db, id);
+  if (!note) return null;
+  const copyId = newId();
+  const now = new Date();
+  const position = note.bookId ? note.position + 0.5 : 0;
+  await db.insert(schema.notes).values({
+    ...note,
+    id: copyId,
+    title: note.title ? `${note.title} copy` : '',
+    position,
+    isPinned: false,
+    isFavorite: false,
+    lastOpenedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await copyNoteExtras(db, id, copyId);
+  if (note.bookId) await reorderPages(db, note.bookId, (await listPages(db, note.bookId)).map((p) => p.id));
+  return copyId;
+}
+
+async function copyNoteExtras(db: Database, fromId: string, toId: string): Promise<void> {
+  await db.run(sql`insert into ${schema.noteTags} (note_id, tag_id)
+    select ${toId}, tag_id from ${schema.noteTags} where note_id = ${fromId}`);
+  // Photo files are shared: a file is only removed once no note uses it.
+  const photos = await db.select().from(schema.notePhotos).where(eq(schema.notePhotos.noteId, fromId));
+  if (photos.length) {
+    await db.insert(schema.notePhotos).values(photos.map((ph) => ({ ...ph, id: newId(), noteId: toId })));
+  }
+}
+
+/** Copies a book with all its pages, in the same place. */
+export async function duplicateBook(db: Database, id: string): Promise<string | null> {
+  const book = await getBook(db, id);
+  if (!book) return null;
+  const copyId = newId();
+  const now = new Date();
+  await db.insert(schema.books).values({
+    ...book,
+    id: copyId,
+    name: `${book.name} copy`,
+    isPinned: false,
+    isFavorite: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+  for (const page of await listPages(db, id)) {
+    const pageId = newId();
+    await db.insert(schema.notes).values({ ...page, id: pageId, bookId: copyId, lastOpenedAt: null, createdAt: now, updatedAt: now });
+    await copyNoteExtras(db, page.id, pageId);
+  }
+  return copyId;
+}
+
+export interface NoteStats {
+  words: number;
+  characters: number;
+  /** Minutes to read at about 230 words a minute, at least 1 when there are words. */
+  readingMinutes: number;
+}
+
+export function noteStats(text: string): NoteStats {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  return { words, characters: text.replace(/\s/g, '').length, readingMinutes: words ? Math.max(1, Math.round(words / 230)) : 0 };
+}
+
+/** Remembers that a note was just opened, for "Continue writing". Not an edit. */
+export async function markOpened(db: Database, id: string): Promise<void> {
+  await db.update(schema.notes).set({ lastOpenedAt: new Date() }).where(eq(schema.notes.id, id));
+}
+
+/** Notes opened most recently, newest first. */
+export async function listRecentlyOpened(db: Database, limit = 6): Promise<Note[]> {
+  return db
+    .select()
+    .from(schema.notes)
+    .where(and(live(schema.notes), sql`${schema.notes.lastOpenedAt} is not null`))
+    .orderBy(desc(schema.notes.lastOpenedAt))
+    .limit(limit);
 }
 
 // Recently deleted -----------------------------------------------------------

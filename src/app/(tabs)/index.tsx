@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { EmptyState, Screen } from '@/components/ui';
+import { Button, EmptyState, Screen } from '@/components/ui';
+import { useDb } from '@/db';
 import {
   AddMenu,
   BookCard,
@@ -13,13 +14,17 @@ import {
   SectionHeader,
   type ActionTarget,
 } from '@/features/library/components';
+import { ContinueWriting } from '@/features/library/components/ContinueWriting';
 import { FavoritesStrip } from '@/features/library/components/FavoritesStrip';
 import { useBooks, useCollections, useNotes, useSort } from '@/features/library/queries';
+import { createSampleLibrary } from '@/features/sample/sample';
+import { run, showInfo } from '@/lib/errors';
 import { createStyles } from '@/theme';
 
 /** The library: collections, then books and notes that aren't in a collection. */
 export default function LibraryScreen() {
   const styles = useStyles();
+  const db = useDb();
   const [collectionSort, setCollectionSort] = useSort('collections');
   const [bookSort, setBookSort] = useSort('books');
   const [noteSort, setNoteSort] = useSort('notes');
@@ -35,13 +40,27 @@ export default function LibraryScreen() {
     <View style={styles.fill}>
       <Screen title="Library">
         {empty ? (
-          <EmptyState
-            icon="library-outline"
-            title="Nothing here yet"
-            message="Tap + to start a note, a book, or a collection to keep them in."
-          />
+          <View style={styles.empty}>
+            <EmptyState
+              icon="library-outline"
+              title="Nothing here yet"
+              message="Tap + to start a note, a book, or a collection to keep them in."
+            />
+            <Button
+              title="Add an example library"
+              variant="secondary"
+              icon="sparkles-outline"
+              onPress={() =>
+                run(
+                  createSampleLibrary(db).then(() => showInfo('Added an example library. Delete any of it whenever you like.')),
+                  'Could not add the example.',
+                )
+              }
+            />
+          </View>
         ) : null}
 
+        <ContinueWriting />
         <FavoritesStrip />
 
         {collections.data.length ? (
@@ -99,4 +118,5 @@ const useStyles = createStyles((t) => ({
   fill: { flex: 1 },
   section: { gap: t.spacing.md },
   fabSpace: { height: 72 },
+  empty: { gap: t.spacing.md },
 }));

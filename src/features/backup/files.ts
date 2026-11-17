@@ -11,7 +11,7 @@ function today(): string {
  * Writes a file to the app's cache and opens the share sheet, so the person picks where it goes
  * (Drive, email, Files). The app never uploads anything itself.
  */
-async function shareText(name: string, text: string, mimeType: string, dialogTitle: string): Promise<void> {
+async function shareText(name: string, text: string | Uint8Array, mimeType: string, dialogTitle: string): Promise<void> {
   const file = new File(Paths.cache, name);
   if (file.exists) file.delete();
   file.create();
@@ -20,22 +20,30 @@ async function shareText(name: string, text: string, mimeType: string, dialogTit
   await Sharing.shareAsync(file.uri, { mimeType, dialogTitle });
 }
 
-export function shareBackup(json: string, encrypted: boolean): Promise<void> {
+/** Shares a backup: plain JSON, or a zip when it has photos. */
+export function shareBackup(content: string | Uint8Array, encrypted: boolean): Promise<void> {
+  const zip = typeof content !== 'string';
   return shareText(
-    `pb-notes-backup-${today()}${encrypted ? '-encrypted' : ''}.json`,
-    json,
-    'application/json',
+    `pb-notes-backup-${today()}${encrypted ? '-encrypted' : ''}.${zip ? 'zip' : 'json'}`,
+    content,
+    zip ? 'application/zip' : 'application/json',
     'Save your backup somewhere off this phone',
   );
+}
+
+/** Shares one note as a Markdown text file. */
+export function shareNoteFile(title: string, markdown: string): Promise<void> {
+  const safe = (title || 'note').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'note';
+  return shareText(`${safe}.md`, markdown, 'text/markdown', 'Share this note');
 }
 
 export function shareMarkdown(markdown: string): Promise<void> {
   return shareText(`pb-notes-${today()}.md`, markdown, 'text/markdown', 'Save your notes as Markdown');
 }
 
-/** Opens the system file picker. Returns the file's text, or null if cancelled. */
-export async function pickBackupText(): Promise<string | null> {
-  const picked = await File.pickFileAsync({ mimeTypes: ['application/json', 'text/plain', '*/*'] });
+/** Opens the system file picker. Returns the file's bytes (zip or JSON), or null if cancelled. */
+export async function pickBackupBytes(): Promise<Uint8Array | null> {
+  const picked = await File.pickFileAsync({ mimeTypes: ['application/zip', 'application/json', 'text/plain', '*/*'] });
   if (picked.canceled) return null;
-  return picked.result.text();
+  return picked.result.bytes();
 }

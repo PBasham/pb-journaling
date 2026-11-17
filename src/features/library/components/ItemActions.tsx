@@ -2,12 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button, ConfirmDialog, ListGroup, ListRow, Sheet, Text } from '@/components/ui';
+import { Button, ConfirmDialog, ListGroup, ListRow, Sheet, Text, TextField } from '@/components/ui';
 import { router } from 'expo-router';
 
 import { useDb } from '@/db';
+import { useLive } from '@/db/useLive';
 import { useLock } from '@/features/lock';
 import type { Book, Collection, Note } from '@/db/schema';
+import { formatWhen, plural } from '@/lib/dates';
 import { run, showInfo, showUndo } from '@/lib/errors';
 import { createStyles, isItemColor, itemColorValue, useTheme, type ItemColor } from '@/theme';
 
@@ -17,6 +19,12 @@ import {
   deleteNote,
   moveBook,
   moveNote,
+  duplicateBook,
+  duplicateNote,
+  getBook,
+  getCollection,
+  getNote,
+  noteStats,
   restoreDeleted,
   shiftPage,
   updateBook,
@@ -26,6 +34,11 @@ import {
   type NotePlace,
 } from '../library';
 import { useDestinations } from '../queries';
+import { shareNoteFile } from '../../backup/files';
+import { docToMarkdown } from '../../backup/markdown';
+import { parseDoc } from '../../editor/document';
+import { TagPickerSheet } from '../../tags/components/TagPickerSheet';
+import { saveTemplate } from '../../templates/templates';
 
 import { ItemFormSheet } from './ItemFormSheet';
 
@@ -41,7 +54,7 @@ interface ItemActionsProps {
   onDeleted?: (kind: ActionTarget['kind']) => void;
 }
 
-type Step = 'menu' | 'edit' | 'move' | 'delete';
+type Step = 'menu' | 'edit' | 'move' | 'delete' | 'info' | 'template' | 'tags';
 
 /** Options for a collection, book or note: edit, favorite, move, reorder and delete. */
 export function ItemActions({ target, onClose, onDeleted }: ItemActionsProps) {
@@ -57,6 +70,13 @@ export function ItemActions({ target, onClose, onDeleted }: ItemActionsProps) {
       <EditSheet target={target} visible={step === 'edit'} onClose={close} />
       <MoveSheet target={target} visible={step === 'move'} onClose={close} />
       <DeleteSheet target={target} visible={step === 'delete'} onClose={close} onDeleted={onDeleted} />
+      {target.kind === 'note' ? (
+        <>
+          <InfoSheet note={target.item} visible={step === 'info'} onClose={close} />
+          <SaveTemplateSheet note={target.item} visible={step === 'template'} onClose={close} />
+          <TagPickerSheet noteId={target.item.id} visible={step === 'tags'} onClose={close} />
+        </>
+      ) : null}
     </>
   );
 }
@@ -78,7 +98,7 @@ function Menu({
   onClose: () => void;
 }) {
   const db = useDb();
-  const { config, isUnlocked, keepOpen } = useLock();
+  const { config, isUnlocked, keepOpen, suspendAutoLock } = useLock();
   const { kind, item } = target;
   const isPage = kind === 'note' && !!item.bookId;
   // A locked item shows no options until it has been opened with the PIN or password.
@@ -151,6 +171,31 @@ function Menu({
     onClose();
   };
 
+  const duplicate = () => {
+    onClose();
+    const copy = kind === 'book' ? duplicateBook(db, item.id) : duplicateNote(db, item.id);
+    run(copy.then(() => showInfo(kind === 'book' ? 'Book copied with its pages.' : 'Copied.')), 'Could not copy it.');
+  };
+
+  const share = () => {
+    onClose();
+    run(
+      (async () => {
+        const note = await getNote(db, item.id);
+        if (!note) return;
+        const body = docToMarkdown(parseDoc(note.contentJson), 1);
+        const markdown = `${note.title ? `# ${note.title}\n\n` : ''}${body}\n`;
+        const release = suspendAutoLock();
+        try {
+          await shareNoteFile(note.title, markdown);
+        } finally {
+          release();
+        }
+      })(),
+      'Could not share the note.',
+    );
+  };
+
   const shift = (step: -1 | 1) => {
     run(shiftPage(db, item.id, step), 'Could not move the page.');
     onClose();
@@ -180,6 +225,21 @@ function Menu({
             divider
             onPress={togglePin}
           />
+        ) : null}
+        {kind === 'note' ? (
+          <>
+            <ListRow icon="pricetag-outline" title="Tags" divider onPress={() => onStep('tags')} />
+            <ListRow icon="share-outline" title="Share" divider onPress={share} />
+          </>
+        ) : null}
+        {kind !== 'collection' ? (
+          <ListRow icon="copy-outline" title={kind === 'book' ? 'Duplicate book' : 'Duplicate'} divider onPress={duplicate} />
+        ) : null}
+        {kind === 'note' ? (
+          <>
+            <ListRow icon="bookmark-outline" title="Save as template" divider onPress={() => onStep('template')} />
+            <ListRow icon="information-circle-outline" title="Info" divider onPress={() => onStep('info')} />
+          </>
         ) : null}
         {kind !== 'collection' ? (
           <ListRow icon="folder-open-outline" title="Move to…" divider onPress={() => onStep('move')} />
@@ -383,6 +443,73 @@ function DeleteSheet({
       onCancel={onClose}
       onConfirm={() => remove(() => deleteNote(db, item.id), isPage ? 'Page deleted.' : 'Note deleted.')}
     />
+  );
+}
+
+function InfoSheet({ note, visible, onClose }: { note: Note; visible: boolean; onClose: () => void }) {
+  const db = useDb();
+  const { data } = useLive(
+    async () => {
+      const fresh = await getNote(db, note.id);
+      const book = fresh?.bookId ? await getBook(db, fresh.bookId) : undefined;
+      const collection = await getCollection(db, fresh?.collectionId ?? book?.collectionId ?? '');
+      return { fresh, book, collection };
+    },
+    ['notes', 'books', 'collections'],
+    [db, note.id, visible],
+    { fresh: undefined, book: undefined, collection: undefined } as { fresh?: Note; book?: Book; collection?: Collection },
+  );
+  const current = data.fresh ?? note;
+  const stats = noteStats(current.contentText);
+  const where = [data.collection?.name, data.book?.name].filter(Boolean).join(' / ') || 'Library (top level)';
+  const rows: [string, string][] = [
+    ['Words', String(stats.words)],
+    ['Characters', String(stats.characters)],
+    ['Reading time', stats.readingMinutes ? plural(stats.readingMinutes, 'minute') : 'None'],
+    ['Created', `${current.createdAt.toLocaleDateString()} ${formatWhen(current.createdAt)}`],
+    ['Last edited', `${current.updatedAt.toLocaleDateString()} ${formatWhen(current.updatedAt)}`],
+    ['Where', where],
+  ];
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      <Text variant="heading" numberOfLines={1}>
+        {current.title || 'Untitled'}
+      </Text>
+      <ListGroup>
+        {rows.map(([label, value], i) => (
+          <ListRow key={label} title={label} value={value} divider={i > 0} />
+        ))}
+      </ListGroup>
+    </Sheet>
+  );
+}
+
+function SaveTemplateSheet({ note, visible, onClose }: { note: Note; visible: boolean; onClose: () => void }) {
+  const db = useDb();
+  const [name, setName] = useState(note.title);
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) setName(note.title);
+  }
+  const save = () => {
+    onClose();
+    run(
+      (async () => {
+        const fresh = (await getNote(db, note.id)) ?? note;
+        await saveTemplate(db, { name, title: '', doc: parseDoc(fresh.contentJson) });
+        showInfo(`Saved “${name.trim() || 'My template'}”. Pick it when you start a new note.`);
+      })(),
+      'Could not save the template.',
+    );
+  };
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      <Text variant="heading">Save as template</Text>
+      <Text color="textMuted">New notes can start from this one&apos;s layout and text.</Text>
+      <TextField label="Template name" value={name} onChangeText={setName} autoFocus maxLength={60} onSubmitEditing={save} />
+      <Button title="Save template" disabled={!name.trim()} onPress={save} />
+    </Sheet>
   );
 }
 

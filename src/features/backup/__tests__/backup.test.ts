@@ -12,6 +12,7 @@ import {
   setSetting,
   updateNote,
 } from '../../library/library';
+import { findOrCreateTag, getNoteTags, setNoteTags } from '../../tags/tags';
 import { countExisting, readAllData, restoreData, SCHEMA_VERSION } from '../database';
 import {
   BackupError,
@@ -49,7 +50,7 @@ describe('backup round trip', () => {
 
     const fresh = createTestDb();
     const parsed = parseBackup(text, SCHEMA_VERSION) as PlainBackup;
-    expect(summarizeBackup(parsed.data)).toEqual({ collections: 1, books: 1, pages: 2, notes: 1 });
+    expect(summarizeBackup(parsed.data)).toEqual({ collections: 1, books: 1, pages: 2, notes: 1, photos: 0 });
     await restoreData(fresh, parsed.data, 'replace');
 
     const original = await getNote(db, page);
@@ -83,6 +84,17 @@ describe('backup round trip', () => {
     expect((await readAllData(target)).settings).toEqual([]);
   });
 
+  it('merging joins tags that share a name and keeps their notes tagged', async () => {
+    const { db, page } = await sampleLibrary();
+    const tag = await findOrCreateTag(db, 'Soup');
+    await setNoteTags(db, page, [tag.id]);
+    const backup = buildBackup(await readAllData(db), SCHEMA_VERSION);
+    const target = createTestDb();
+    const local = await findOrCreateTag(target, 'soup');
+    await restoreData(target, backup.data, 'merge');
+    expect((await getNoteTags(target, page)).map((t) => t.id)).toEqual([local.id]);
+  });
+
   it('ignores columns this app version does not know', async () => {
     const { db } = await sampleLibrary();
     const data = await readAllData(db);
@@ -109,7 +121,7 @@ describe('encrypted backups', () => {
   });
 
   it('needs a long enough passphrase', async () => {
-    const backup = buildBackup({ collections: [], books: [], notes: [], settings: [] }, SCHEMA_VERSION);
+    const backup = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
     await expect(encryptBackup(backup, 'short', 10)).rejects.toThrow('at least 8');
   });
 });
@@ -118,7 +130,7 @@ describe('parseBackup', () => {
   it('refuses other files, damaged files and newer versions', () => {
     expect(() => parseBackup('not json', SCHEMA_VERSION)).toThrow('not a PB Notes backup');
     expect(() => parseBackup('{"app":"other"}', SCHEMA_VERSION)).toThrow('not a PB Notes backup');
-    const good = buildBackup({ collections: [], books: [], notes: [], settings: [] }, SCHEMA_VERSION);
+    const good = buildBackup({ collections: [], books: [], notes: [], tags: [], noteTags: [], templates: [], notePhotos: [], settings: [] }, SCHEMA_VERSION);
     expect(() => parseBackup(JSON.stringify({ ...good, schemaVersion: SCHEMA_VERSION + 1 }), SCHEMA_VERSION)).toThrow(
       'newer version',
     );

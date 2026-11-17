@@ -5,7 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', 'dist-e2e/*', 'playwright-report/*', 'test-results/*', 'drizzle/*'],
+    ignores: ['dist/*', 'dist-e2e/*', 'playwright-report/*', 'test-results/*', 'drizzle/*', 'editor-web/build/*', 'src/features/editor/editorHtml.js'],
   },
   {
     // Nothing fails silently: every promise is awaited or passed to `run()` (src/lib/errors),

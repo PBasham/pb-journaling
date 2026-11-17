@@ -13,6 +13,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...base,
     name: `${base.name} (Dev)`,
+    // Shows Settings > Developer tools (sample data, resets) in the development build only.
+    extra: { ...base.extra, devTools: true },
     scheme: `${String(base.scheme)}-dev`,
     ios: { ...base.ios, bundleIdentifier: `${base.ios?.bundleIdentifier}.dev` },
     android: { ...base.android, package: `${base.android?.package}.dev` },

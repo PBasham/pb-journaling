@@ -10,12 +10,13 @@
     "web": "expo start --web",
     "dev": "expo start --dev-client --scheme pbnotes-dev",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p editor-web",
     "test": "jest",
     "db:generate": "drizzle-kit generate",
     "e2e:build": "EXPO_OFFLINE=1 expo export --platform web --output-dir dist-e2e",
     "e2e": "playwright test",
-    "check-listing": "node scripts/check-listing.mjs"
+    "check-listing": "node scripts/check-listing.mjs",
+    "editor:build": "vite build --config editor-web/vite.config.mts && node node_modules/@10play/tentap-editor/scripts/buildEditor.js editor-web/build/index.html src/features/editor/editorHtml.js"
   },
   "dependencies": {
     "@10play/react-native-web-webview": "^0.0.3",
@@ -30,6 +31,9 @@
     "expo-dev-client": "~58.0.18",
     "expo-file-system": "~58.0.13",
     "expo-font": "~58.0.11",
+    "expo-image": "~58.0.18",
+    "expo-image-manipulator": "~58.0.16",
+    "expo-image-picker": "~58.0.10",
     "expo-linking": "~58.0.16",
     "expo-local-authentication": "~58.0.2",
     "expo-router": "~58.0.30",
@@ -39,6 +43,7 @@
     "expo-sqlite": "~58.0.15",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
+    "fflate": "^0.8.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -56,6 +61,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
     "@types/sql.js": "^1.4.11",
+    "@vitejs/plugin-react": "^6.3.0",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
@@ -63,7 +69,9 @@
     "jest": "^30.5.2",
     "jest-expo": "~58.0.14",
     "sql.js": "^1.15.2",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4"
   },
   "jest": {
     "preset": "jest-expo",

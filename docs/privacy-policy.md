@@ -11,6 +11,8 @@ see them.**
 Everything you put into the app is saved only on your device:
 
 - collections, books, pages and notes, including their titles, text, colors and order
+- photos you add to notes (copies made by the app, shrunk and saved without location details; your gallery is never changed)
+- tags and templates you make
 - which items are favorites, pinned or locked
 - items in Recently deleted, until they are removed for good after 30 days
 - app settings such as appearance and sort order
@@ -32,7 +34,7 @@ Your notes can leave your phone only in these ways, and never to us:
 - **Your phone's own backup:** if Google backup is turned on in your phone's settings, Android may
   include the app's data in your Google account backup, as it does for other apps. That copy belongs
   to your Google account; we can't see it. It never includes your PIN or password.
-- **Backup file:** a file with everything, made in the app and sent wherever you choose with your
+- **Backup file:** a file with everything, including photos, made in the app and sent wherever you choose with your
   phone's share sheet. You can protect it with a passphrase, which encrypts it with AES 256. Without
   the passphrase it cannot be opened, including by us. Backups include locked items.
 - **Markdown export:** a readable text copy of your notes, saved the same way. It is not encrypted.
@@ -43,9 +45,11 @@ policy.
 
 ## Permissions
 
+- **Camera:** only when you choose Take a photo in a note.
+- **Photos:** the app uses Android's photo picker, so it sees only the photos you pick.
 - **Biometrics:** only used if you turn on fingerprint or face unlock for your locks.
 
-The app does not ask for your location, contacts, camera, microphone or photos.
+The app does not ask for your location, contacts or microphone.
 
 ## Children
 

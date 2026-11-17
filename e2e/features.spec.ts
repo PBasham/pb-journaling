@@ -44,9 +44,9 @@ test('locks a note with a PIN and keeps it out of search', async ({ page }) => {
 
   await tab(page, 'Library').click();
   await newNote(page, 'Secret diary', 'Nobody reads this');
-  await page.getByRole('button', { name: /Secret diary/ }).click({ delay: 800 });
+  await page.getByRole('button', { name: /^Secret diary/ }).click({ delay: 800 });
   await button(page, /^Lock/).click();
-  await expect(page.getByRole('button', { name: /Secret diary, locked/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Secret diary, locked/ })).toBeVisible();
 
   // Search leaves it out.
   await tab(page, 'Search').click();
@@ -57,7 +57,7 @@ test('locks a note with a PIN and keeps it out of search', async ({ page }) => {
   await tab(page, 'Settings').click();
   await button(page, /^Lock opened items now/).click();
   await tab(page, 'Library').click();
-  await page.getByRole('button', { name: /Secret diary, locked/ }).click();
+  await page.getByRole('button', { name: /^Secret diary, locked/ }).click();
   await expect(page.getByText('“Secret diary” is locked')).toBeVisible();
   await enterPin(page, '1111');
   await expect(page.getByText(/Wrong PIN/)).toBeVisible();

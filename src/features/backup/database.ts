@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm';
+import { getTableColumns, inArray } from 'drizzle-orm';
 
 import type { Database } from '@/db/client';
 import * as schema from '@/db/schema';
@@ -14,6 +14,10 @@ const tables = {
   collections: schema.collections,
   books: schema.books,
   notes: schema.notes,
+  tags: schema.tags,
+  noteTags: schema.noteTags,
+  templates: schema.templates,
+  notePhotos: schema.notePhotos,
   settings: schema.settings,
 } as const;
 
@@ -31,7 +35,7 @@ export type RestoreMode = 'replace' | 'merge';
 
 /** Only the columns each table has, so a backup from an older app version still inserts. */
 function clean(name: BackupTable, row: Record<string, unknown>): Record<string, unknown> {
-  const columns = Object.keys(tables[name]);
+  const columns = Object.keys(getTableColumns(tables[name]));
   const out: Record<string, unknown> = {};
   for (const key of columns) if (key in row) out[key] = row[key];
   return out;
@@ -45,10 +49,26 @@ function clean(name: BackupTable, row: Record<string, unknown>): Record<string, 
  */
 export async function restoreData(db: Database, data: BackupData, mode: RestoreMode): Promise<void> {
   const rows = (name: BackupTable) => data[name].map((r) => clean(name, fromPortableRow(r)));
+  // Merging: a backup tag named like one already here (any case) joins that tag.
+  const tagIdFor = new Map<string, string>();
+  if (mode === 'merge') {
+    const existing = new Map(
+      (await db.select({ id: schema.tags.id, name: schema.tags.name }).from(schema.tags)).map((t) => [t.name.toLowerCase(), t.id]),
+    );
+    for (const t of data.tags) {
+      const match = existing.get(String(t.name).toLowerCase());
+      if (match && match !== t.id) tagIdFor.set(String(t.id), match);
+    }
+  }
+  const noteTagRows = rows('noteTags').map((r) => ({ ...r, tagId: tagIdFor.get(String(r.tagId)) ?? r.tagId }));
   db.transaction((tx) => {
     if (mode === 'replace') {
       // Children first. Deleting collections cascades, but be explicit.
+      tx.delete(schema.noteTags).run();
+      tx.delete(schema.notePhotos).run();
       tx.delete(schema.notes).run();
+      tx.delete(schema.tags).run();
+      tx.delete(schema.templates).run();
       tx.delete(schema.books).run();
       tx.delete(schema.collections).run();
       tx.delete(schema.settings).run();
@@ -65,6 +85,10 @@ export async function restoreData(db: Database, data: BackupData, mode: RestoreM
     insert('collections', rows('collections'));
     insert('books', rows('books'));
     insert('notes', rows('notes'));
+    insert('tags', rows('tags').filter((t) => !tagIdFor.has(String(t.id))));
+    insert('noteTags', noteTagRows);
+    insert('templates', rows('templates'));
+    insert('notePhotos', rows('notePhotos'));
     if (mode === 'replace') insert('settings', rows('settings'));
   });
 }

@@ -19,6 +19,10 @@ Read `AGENTS.md` (Expo guidance) and `PLAN.md` (roadmap and status) before start
 - Settings live in the `settings` table through `useSetting` (`src/features/settings/settings.ts`). Lock settings are the exception: they live in secure storage.
 - Secrets (PIN, password) are stored only as salted hashes in `expo-secure-store`, never in SQLite or plain text.
 - Locked items (or anything inside a locked collection or book) never show their text outside their own screen: not in search, previews or exports unless the person chose that.
+- The editor page lives in `editor-web/`. After changing it (or `blocksProtocol.ts`), run `npm run editor:build` and commit the regenerated `src/features/editor/editorHtml.js`.
+- Built in template ids (`builtin-…`) are permanent. Change their content freely; never rename or reuse an id.
+- Photo files live in the app's `photos/` folder and can be shared by copies of a note. Delete files only through `cleanOrphanPhotos`.
+- Developer tools (`src/app/(tabs)/settings/developer.tsx`) show only when `devToolsEnabled` (dev server or the development build).
 - Nothing fails silently: event handlers pass promises to `run()` from `src/lib/errors`.
 - Before finishing: `npm run typecheck`, `npm run lint`, `npm test`. For UI changes also `npm run e2e:build && npm run e2e`.
 
