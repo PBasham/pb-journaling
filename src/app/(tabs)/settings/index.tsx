@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
 import { ListGroup, ListRow, Screen, Section, Text, Toggle } from '@/components/ui';
+import { useTrash } from '@/features/library/queries';
 import { useLock } from '@/features/lock';
 import { useSetting } from '@/features/settings/settings';
 import { formatWhen } from '@/lib/dates';
@@ -15,6 +16,7 @@ export default function SettingsScreen() {
   const [showPreviews, setShowPreviews] = useSetting('showPreviews');
   const [lastBackupAt] = useSetting('lastBackupAt');
   const { config } = useLock();
+  const { data: trash } = useTrash();
   const version = Constants.expoConfig?.version ?? '0.0.0';
   const accentLabel = accents[isAccentName(accent) ? accent : 'indigo'].label;
   const lockValue = !config ? 'Off' : config.method === 'pin' ? 'PIN' : 'Password';
@@ -47,6 +49,14 @@ export default function SettingsScreen() {
             description="PIN or password for the app, and for collections, books and notes you lock"
             value={lockValue}
             onPress={() => router.push('/settings/lock')}
+          />
+          <ListRow
+            icon="trash-outline"
+            title="Recently deleted"
+            description="Restore anything deleted in the last 30 days"
+            value={trash.length ? String(trash.length) : undefined}
+            onPress={() => router.push('/settings/trash')}
+            divider
           />
           <ListRow
             icon="cloud-upload-outline"

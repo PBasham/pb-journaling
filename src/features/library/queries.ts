@@ -18,11 +18,13 @@ import {
   listFavorites,
   listNotes,
   listPages,
+  listTrash,
   setSetting,
   type BookWithCounts,
   type CollectionWithCounts,
   type Favorites,
   type SortOrder,
+  type TrashItem,
 } from './library';
 
 const ALL = ['collections', 'books', 'notes'];
@@ -111,4 +113,10 @@ export function useDestinations() {
     [db],
     { collections: [], books: [] },
   );
+}
+
+/** What's in Recently deleted (live). */
+export function useTrash() {
+  const db = useDb();
+  return useLive<TrashItem[]>(() => listTrash(db), ALL, [db], []);
 }

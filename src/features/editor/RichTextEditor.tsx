@@ -5,7 +5,6 @@ import {
   PlaceholderBridge,
   RichText,
   TenTapStartKit,
-  Toolbar,
   useEditorBridge,
   type EditorBridge,
   type EditorTheme,
@@ -16,6 +15,7 @@ import { View } from 'react-native';
 import { createStyles, useTheme, type Theme } from '@/theme';
 
 import type { Doc } from './document';
+import { FormatToolbar } from './FormatToolbar';
 
 type BridgeTheme = NonNullable<Parameters<typeof useEditorBridge>[0]>['theme'];
 
@@ -92,9 +92,7 @@ export function RichTextEditor({ initialDoc, onChange, placeholder = 'Start writ
       <View style={styles.fill}>
         <RichText editor={editor} />
       </View>
-      <View style={styles.toolbar}>
-        <Toolbar editor={editor} />
-      </View>
+      <FormatToolbar editor={editor} />
     </EditorKeyboardAvoidingView>
   );
 }
@@ -147,12 +145,25 @@ function editorCss(t: Theme): string {
   return `
     * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     html, body { background: ${c.background}; color: ${c.text}; }
-    .ProseMirror { font-size: ${t.typography.body.fontSize + 1}px; line-height: 1.55; padding: 0 2px 48px; caret-color: ${c.primary}; }
-    .ProseMirror h1, .ProseMirror h2, .ProseMirror h3 { line-height: 1.25; }
+    .ProseMirror { font-size: ${t.typography.body.fontSize + 1}px; line-height: 1.55; padding: 0 ${t.spacing.lg}px 48px; caret-color: ${c.primary}; }
+    .ProseMirror h1 { font-size: ${t.typography.title.fontSize + 2}px; line-height: 1.25; margin: 0.9em 0 0.35em; font-weight: 700; }
+    .ProseMirror h2 { font-size: ${t.typography.heading.fontSize + 2}px; line-height: 1.3; margin: 0.8em 0 0.3em; font-weight: 700; }
+    .ProseMirror h3 { font-size: ${t.typography.body.fontSize + 1}px; line-height: 1.35; margin: 0.7em 0 0.25em; font-weight: 700; color: ${c.textMuted}; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ProseMirror > :first-child { margin-top: 0; }
+    .ProseMirror p { margin: 0 0 0.6em; }
+    .ProseMirror ul, .ProseMirror ol { padding-left: 1.4em; margin: 0 0 0.6em; }
+    .ProseMirror li > p { margin: 0.15em 0; }
+    .ProseMirror li::marker { color: ${c.primary}; }
+    .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.2em; }
+    .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5em; }
+    .ProseMirror ul[data-type="taskList"] li > label { margin-top: 0.2em; }
+    .ProseMirror ul[data-type="taskList"] li > div { flex: 1; }
+    .ProseMirror ul[data-type="taskList"] input[type="checkbox"] { width: 1.05em; height: 1.05em; accent-color: ${c.primary}; }
+    .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div { color: ${c.textMuted}; text-decoration: line-through; }
+    .ProseMirror mark { border-radius: 3px; padding: 0 1px; color: inherit; }
     .ProseMirror blockquote { border-left: 3px solid ${c.primary}; margin-left: 0; padding-left: ${t.spacing.md}px; color: ${c.textMuted}; }
     .ProseMirror a { color: ${c.primary}; }
     .ProseMirror code { background: ${c.surfaceMuted}; border-radius: ${t.spacing.xs}px; padding: 1px ${t.spacing.xs}px; }
-    .ProseMirror ul[data-type="taskList"] { padding-left: 4px; }
     .ProseMirror p.is-editor-empty:first-child::before { color: ${c.textMuted}; }
     ::selection { background: ${c.primarySoft}; }
   `;
@@ -160,8 +171,4 @@ function editorCss(t: Theme): string {
 
 const useStyles = createStyles((t) => ({
   fill: { flex: 1 },
-  toolbar: {
-    borderTopWidth: 1,
-    borderTopColor: t.colors.border,
-  },
 }));

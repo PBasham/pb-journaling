@@ -85,11 +85,13 @@ export default function BackupScreen() {
 
   const exportMarkdown = async () => {
     const data = await readAllData(db);
+    // Recently deleted stays out of the export.
+    const kept = <T extends { deletedAt: Date | null }>(rows: T[]) => rows.filter((r) => !r.deletedAt);
     const markdown = libraryToMarkdown(
       {
-        collections: data.collections.map(fromPortableRow) as Collection[],
-        books: data.books.map(fromPortableRow) as Book[],
-        notes: data.notes.map(fromPortableRow) as Note[],
+        collections: kept(data.collections.map(fromPortableRow) as Collection[]),
+        books: kept(data.books.map(fromPortableRow) as Book[]),
+        notes: kept(data.notes.map(fromPortableRow) as Note[]),
       },
       { includeLocked: false },
     );

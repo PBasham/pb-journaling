@@ -22,12 +22,14 @@ import {
   listPages,
   moveBook,
   moveNote,
-  restoreSnapshot,
+  deleteForever,
+  emptyTrash,
+  listTrash,
+  purgeOldTrash,
+  restoreDeleted,
+  searchLibrary,
   setSetting,
   shiftPage,
-  snapshotBook,
-  snapshotCollection,
-  snapshotNote,
   updateCollection,
   updateNote,
 } from '../library';
@@ -102,9 +104,9 @@ describe('collections', () => {
     const page = await createNote(db, { bookId: book }, { title: 'p1' });
     await createNote(db, { collectionId: col }, { title: 'loose' });
 
-    const snap = await snapshotCollection(db, col);
     await deleteCollection(db, col, 'everything');
-    await restoreSnapshot(db, snap);
+    expect(await listCollections(db)).toEqual([]);
+    await restoreDeleted(db, 'collection', col);
 
     const [c] = await listCollections(db);
     expect(c).toMatchObject({ id: col, bookCount: 1, noteCount: 1 });
@@ -152,10 +154,9 @@ describe('books and pages', () => {
     const db = createTestDb();
     const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
     const page = await createNote(db, { bookId: book });
-    const snap = await snapshotBook(db, book);
     await deleteBook(db, book);
     expect(await getNote(db, page)).toBeUndefined();
-    await restoreSnapshot(db, snap);
+    await restoreDeleted(db, 'book', book);
     expect((await getNote(db, page))?.bookId).toBe(book);
   });
 });
@@ -223,11 +224,109 @@ describe('notes', () => {
     const db = createTestDb();
     const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
     const page = await createNote(db, { bookId: book }, { title: 'keep me' });
-    const snap = await snapshotNote(db, page);
     await deleteNote(db, page);
     await deleteBook(db, book);
-    await restoreSnapshot(db, snap);
+    await restoreDeleted(db, 'note', page);
     expect(await getNote(db, page)).toMatchObject({ bookId: null, collectionId: null, title: 'keep me' });
+  });
+});
+
+describe('pinning', () => {
+  it('lists pinned items first, whatever the sort', async () => {
+    const db = createTestDb();
+    await createNote(db, { collectionId: null }, { title: 'b' });
+    const a = await createNote(db, { collectionId: null }, { title: 'a' });
+    await createNote(db, { collectionId: null }, { title: 'c' });
+    await updateNote(db, a, { isPinned: true });
+    const byName = (await listNotes(db, null, { field: 'name', ascending: false })).map((n) => n.title);
+    expect(byName).toEqual(['a', 'c', 'b']);
+    const col = await createCollection(db, { name: 'z', color: 'slate' });
+    await createCollection(db, { name: 'y', color: 'slate' });
+    await updateCollection(db, col, { isPinned: true });
+    expect((await listCollections(db, { field: 'name', ascending: true })).map((c) => c.name)).toEqual(['z', 'y']);
+  });
+});
+
+describe('recently deleted', () => {
+  it('lists a deleted collection once, with what went with it', async () => {
+    const db = createTestDb();
+    const col = await createCollection(db, { name: 'C', color: 'slate' });
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: col });
+    await createNote(db, { bookId: book });
+    await createNote(db, { bookId: book });
+    await createNote(db, { collectionId: col });
+    const lone = await createNote(db, { collectionId: null }, { title: 'lone' });
+    await deleteNote(db, lone);
+    await deleteCollection(db, col, 'everything');
+
+    const trash = await listTrash(db);
+    expect(trash.map((t) => [t.kind, t.name])).toEqual([
+      ['collection', 'C'],
+      ['note', 'lone'],
+    ]);
+    expect(trash[0].contains).toEqual({ books: 1, pages: 2, notes: 1 });
+  });
+
+  it('restores only what was deleted together', async () => {
+    const db = createTestDb();
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
+    const early = await createNote(db, { bookId: book }, { title: 'early' });
+    await createNote(db, { bookId: book }, { title: 'later' });
+    await deleteNote(db, early);
+    await new Promise((r) => setTimeout(r, 5));
+    await deleteBook(db, book);
+    await restoreDeleted(db, 'book', book);
+    expect((await listPages(db, book)).map((p) => p.title)).toEqual(['later']);
+    expect((await listTrash(db)).map((t) => t.name)).toEqual(['early']);
+  });
+
+  it('a restored book goes to the top level if its collection is deleted', async () => {
+    const db = createTestDb();
+    const col = await createCollection(db, { name: 'C', color: 'slate' });
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: col });
+    await deleteBook(db, book);
+    await new Promise((r) => setTimeout(r, 5));
+    await deleteCollection(db, col, 'everything');
+    await restoreDeleted(db, 'book', book);
+    expect((await listBooks(db, null)).map((b) => b.id)).toEqual([book]);
+  });
+
+  it('deletes for good one item, everything, or what is older than 30 days', async () => {
+    const db = createTestDb();
+    const a = await createNote(db, { collectionId: null });
+    const b = await createNote(db, { collectionId: null });
+    const book = await createBook(db, { name: 'B', color: 'slate', collectionId: null });
+    const page = await createNote(db, { bookId: book });
+    await deleteNote(db, a);
+    await deleteNote(db, b);
+    await deleteBook(db, book);
+
+    await deleteForever(db, 'note', a);
+    expect((await listTrash(db)).map((t) => t.id).sort()).toEqual([b, book].sort());
+
+    await purgeOldTrash(db, new Date(Date.now() + 29 * 86_400_000));
+    expect(await listTrash(db)).toHaveLength(2);
+    await purgeOldTrash(db, new Date(Date.now() + 31 * 86_400_000));
+    expect(await listTrash(db)).toEqual([]);
+    // The page went with its book: nothing left behind.
+    await restoreDeleted(db, 'note', page);
+    expect(await getNote(db, page)).toBeUndefined();
+
+    const c = await createNote(db, { collectionId: null });
+    await deleteNote(db, c);
+    await emptyTrash(db);
+    expect(await listTrash(db)).toEqual([]);
+  });
+
+  it('deleted items stay out of lists, counts, search and favorites', async () => {
+    const db = createTestDb();
+    const col = await createCollection(db, { name: 'C', color: 'slate' });
+    const n = await createNote(db, { collectionId: col }, { title: 'findme' });
+    await updateNote(db, n, { isFavorite: true });
+    await deleteNote(db, n);
+    expect((await listCollections(db))[0].noteCount).toBe(0);
+    expect((await listFavorites(db)).notes).toEqual([]);
+    expect((await searchLibrary(db, 'findme')).notes).toEqual([]);
   });
 });
 

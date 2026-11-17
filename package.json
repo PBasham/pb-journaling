@@ -14,7 +14,8 @@
     "test": "jest",
     "db:generate": "drizzle-kit generate",
     "e2e:build": "EXPO_OFFLINE=1 expo export --platform web --output-dir dist-e2e",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check-listing": "node scripts/check-listing.mjs"
   },
   "dependencies": {
     "@10play/react-native-web-webview": "^0.0.3",

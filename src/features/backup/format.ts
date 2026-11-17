@@ -48,7 +48,7 @@ export type BackupFile = PlainBackup | EncryptedBackup;
 /** A problem with a backup file, with a message to show the person. */
 export class BackupError extends Error {}
 
-const DATE_COLUMNS = new Set(['createdAt', 'updatedAt']);
+const DATE_COLUMNS = new Set(['createdAt', 'updatedAt', 'deletedAt']);
 
 /** Database row to JSON safe row. Dates become epoch milliseconds. */
 export function toPortableRow(row: object): PortableRow {

@@ -23,10 +23,36 @@ export interface SortOrder {
 
 export const defaultSort: SortOrder = { field: 'updated', ascending: false };
 
-function orderBy(sort: SortOrder, columns: { name: SQLiteColumn; created: SQLiteColumn; updated: SQLiteColumn }): SQL[] {
+/** Pinned items first, then the chosen order. */
+function orderBy(
+  sort: SortOrder,
+  columns: { pinned: SQLiteColumn; name: SQLiteColumn; created: SQLiteColumn; updated: SQLiteColumn },
+): SQL[] {
   const dir = sort.ascending ? asc : desc;
-  if (sort.field === 'name') return [dir(sql`lower(${columns.name})`), desc(columns.updated)];
-  return [dir(sort.field === 'created' ? columns.created : columns.updated)];
+  const pinnedFirst = desc(columns.pinned);
+  if (sort.field === 'name') return [pinnedFirst, dir(sql`lower(${columns.name})`), desc(columns.updated)];
+  return [pinnedFirst, dir(sort.field === 'created' ? columns.created : columns.updated)];
+}
+
+/** Not in Recently deleted. */
+const live = (table: { deletedAt: SQLiteColumn }) => isNull(table.deletedAt);
+
+/** How long deleted items stay in Recently deleted. */
+export const TRASH_DAYS = 30;
+
+/** Flags any collection, book or note can change without counting as an edit. */
+export interface ItemFlags {
+  isFavorite?: boolean;
+  isLocked?: boolean;
+  isPinned?: boolean;
+}
+
+function flags(patch: ItemFlags) {
+  return {
+    ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
+    ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
+    ...(patch.isPinned !== undefined ? { isPinned: patch.isPinned } : {}),
+  };
 }
 
 // Where things live ---------------------------------------------------------
@@ -64,15 +90,14 @@ export async function createCollection(db: Database, input: CollectionInput): Pr
 export async function updateCollection(
   db: Database,
   id: string,
-  patch: Partial<CollectionInput> & { isFavorite?: boolean; isLocked?: boolean },
+  patch: Partial<CollectionInput> & ItemFlags,
 ): Promise<void> {
   await db
     .update(schema.collections)
     .set({
-      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
+      ...flags(patch),
       ...(patch.name !== undefined ? { name: cleanName(patch.name) || 'Untitled collection' } : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
-      ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
       // Favoriting isn't an edit: it shouldn't jump the collection to the top of "Updated".
       ...(patch.name !== undefined || patch.color !== undefined ? { updatedAt: new Date() } : {}),
     })
@@ -82,21 +107,39 @@ export async function updateCollection(
 export type CollectionDeleteMode = 'everything' | 'keepContents';
 
 /**
- * Deletes a collection. `everything` removes its books, their pages and its notes too;
- * `keepContents` moves them to the top level first.
+ * Moves a collection to Recently deleted. `everything` takes its books, their pages and its notes
+ * along (deleted at the same moment, so they come back together); `keepContents` moves them to
+ * the top level first.
  */
 export async function deleteCollection(db: Database, id: string, mode: CollectionDeleteMode): Promise<void> {
+  const at = new Date();
+  const bookIds = (
+    await db
+      .select({ id: schema.books.id })
+      .from(schema.books)
+      .where(and(eq(schema.books.collectionId, id), live(schema.books)))
+  ).map((b) => b.id);
   db.transaction((tx) => {
     if (mode === 'keepContents') {
-      tx.update(schema.books).set({ collectionId: null }).where(eq(schema.books.collectionId, id)).run();
-      tx.update(schema.notes).set({ collectionId: null }).where(eq(schema.notes.collectionId, id)).run();
+      tx.update(schema.books).set({ collectionId: null }).where(and(eq(schema.books.collectionId, id), live(schema.books))).run();
+      tx.update(schema.notes).set({ collectionId: null }).where(and(eq(schema.notes.collectionId, id), live(schema.notes))).run();
+    } else {
+      tx.update(schema.books).set({ deletedAt: at }).where(and(eq(schema.books.collectionId, id), live(schema.books))).run();
+      tx.update(schema.notes).set({ deletedAt: at }).where(and(eq(schema.notes.collectionId, id), live(schema.notes))).run();
+      if (bookIds.length) {
+        tx.update(schema.notes).set({ deletedAt: at }).where(and(inArray(schema.notes.bookId, bookIds), live(schema.notes))).run();
+      }
     }
-    tx.delete(schema.collections).where(eq(schema.collections.id, id)).run();
+    tx.update(schema.collections).set({ deletedAt: at }).where(eq(schema.collections.id, id)).run();
   });
 }
 
+/** A collection, unless it's gone or in Recently deleted. */
 export async function getCollection(db: Database, id: string): Promise<Collection | undefined> {
-  const rows = await db.select().from(schema.collections).where(eq(schema.collections.id, id));
+  const rows = await db
+    .select()
+    .from(schema.collections)
+    .where(and(eq(schema.collections.id, id), live(schema.collections)));
   return rows[0];
 }
 
@@ -109,11 +152,12 @@ export async function listCollections(db: Database, sort: SortOrder = defaultSor
   const rows = await db
     .select({
       collection: c,
-      bookCount: sql<number>`(select count(*) from "books" b where b."collection_id" = "collections"."id")`,
-      noteCount: sql<number>`(select count(*) from "notes" n where n."collection_id" = "collections"."id")`,
+      bookCount: sql<number>`(select count(*) from "books" b where b."collection_id" = "collections"."id" and b."deleted_at" is null)`,
+      noteCount: sql<number>`(select count(*) from "notes" n where n."collection_id" = "collections"."id" and n."deleted_at" is null)`,
     })
     .from(c)
-    .orderBy(...orderBy(sort, { name: c.name, created: c.createdAt, updated: c.updatedAt }));
+    .where(live(c))
+    .orderBy(...orderBy(sort, { pinned: c.isPinned, name: c.name, created: c.createdAt, updated: c.updatedAt }));
   return rows.map((r) => ({ ...r.collection, bookCount: Number(r.bookCount), noteCount: Number(r.noteCount) }));
 }
 
@@ -142,15 +186,14 @@ export async function createBook(db: Database, input: BookInput & Place): Promis
 export async function updateBook(
   db: Database,
   id: string,
-  patch: Partial<BookInput> & { isFavorite?: boolean; isLocked?: boolean },
+  patch: Partial<BookInput> & ItemFlags,
 ): Promise<void> {
   await db
     .update(schema.books)
     .set({
-      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
+      ...flags(patch),
       ...(patch.name !== undefined ? { name: cleanName(patch.name) || 'Untitled book' } : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
-      ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
       ...(patch.name !== undefined || patch.color !== undefined ? { updatedAt: new Date() } : {}),
     })
     .where(eq(schema.books.id, id));
@@ -162,13 +205,18 @@ export async function moveBook(db: Database, id: string, collectionId: string | 
   await touchCollection(db, collectionId);
 }
 
-/** Deletes a book and its pages. */
+/** Moves a book and its pages to Recently deleted. */
 export async function deleteBook(db: Database, id: string): Promise<void> {
-  await db.delete(schema.books).where(eq(schema.books.id, id));
+  const at = new Date();
+  db.transaction((tx) => {
+    tx.update(schema.notes).set({ deletedAt: at }).where(and(eq(schema.notes.bookId, id), live(schema.notes))).run();
+    tx.update(schema.books).set({ deletedAt: at }).where(eq(schema.books.id, id)).run();
+  });
 }
 
+/** A book, unless it's gone or in Recently deleted. */
 export async function getBook(db: Database, id: string): Promise<Book | undefined> {
-  const rows = await db.select().from(schema.books).where(eq(schema.books.id, id));
+  const rows = await db.select().from(schema.books).where(and(eq(schema.books.id, id), live(schema.books)));
   return rows[0];
 }
 
@@ -180,17 +228,17 @@ export async function listBooks(db: Database, collectionId: string | null, sort:
   const rows = await db
     .select({
       book: b,
-      pageCount: sql<number>`(select count(*) from "notes" n where n."book_id" = "books"."id")`,
+      pageCount: sql<number>`(select count(*) from "notes" n where n."book_id" = "books"."id" and n."deleted_at" is null)`,
     })
     .from(b)
-    .where(collectionId === null ? isNull(b.collectionId) : eq(b.collectionId, collectionId))
-    .orderBy(...orderBy(sort, { name: b.name, created: b.createdAt, updated: b.updatedAt }));
+    .where(and(live(b), collectionId === null ? isNull(b.collectionId) : eq(b.collectionId, collectionId)))
+    .orderBy(...orderBy(sort, { pinned: b.isPinned, name: b.name, created: b.createdAt, updated: b.updatedAt }));
   return rows.map((r) => ({ ...r.book, pageCount: Number(r.pageCount) }));
 }
 
 /** Every book with where it lives, for the "Move to" picker. */
 export async function listAllBooks(db: Database): Promise<Book[]> {
-  return db.select().from(schema.books).orderBy(sql`lower(${schema.books.name})`);
+  return db.select().from(schema.books).where(live(schema.books)).orderBy(sql`lower(${schema.books.name})`);
 }
 
 // Notes and pages -----------------------------------------------------------
@@ -202,7 +250,10 @@ export interface NoteInput {
 }
 
 async function nextPosition(db: Database, bookId: string): Promise<number> {
-  const rows = await db.select({ top: max(schema.notes.position) }).from(schema.notes).where(eq(schema.notes.bookId, bookId));
+  const rows = await db
+    .select({ top: max(schema.notes.position) })
+    .from(schema.notes)
+    .where(and(eq(schema.notes.bookId, bookId), live(schema.notes)));
   const top = rows[0]?.top;
   return top === null || top === undefined ? 1 : Number(top) + 1;
 }
@@ -232,7 +283,7 @@ export async function createNote(db: Database, place: NotePlace, input: NoteInpu
 export async function updateNote(
   db: Database,
   id: string,
-  patch: NoteInput & { isFavorite?: boolean; isLocked?: boolean },
+  patch: NoteInput & ItemFlags,
 ): Promise<void> {
   const edited = patch.title !== undefined || patch.doc !== undefined || patch.color !== undefined;
   await db
@@ -243,8 +294,7 @@ export async function updateNote(
         ? { contentJson: JSON.stringify(patch.doc), contentText: docToPlainText(patch.doc) }
         : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
-      ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
-      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
+      ...flags(patch),
       ...(edited ? { updatedAt: new Date() } : {}),
     })
     .where(eq(schema.notes.id, id));
@@ -276,12 +326,19 @@ export async function moveNote(db: Database, id: string, place: NotePlace): Prom
   await touchParents(db, { bookId, collectionId });
 }
 
+/** Moves a note or page to Recently deleted. */
 export async function deleteNote(db: Database, id: string): Promise<void> {
+  await db.update(schema.notes).set({ deletedAt: new Date() }).where(eq(schema.notes.id, id));
+}
+
+/** Removes a note right away, skipping Recently deleted. Only for a blank note made by mistake. */
+export async function discardNote(db: Database, id: string): Promise<void> {
   await db.delete(schema.notes).where(eq(schema.notes.id, id));
 }
 
+/** A note, unless it's gone or in Recently deleted. */
 export async function getNote(db: Database, id: string): Promise<Note | undefined> {
-  const rows = await db.select().from(schema.notes).where(eq(schema.notes.id, id));
+  const rows = await db.select().from(schema.notes).where(and(eq(schema.notes.id, id), live(schema.notes)));
   return rows[0];
 }
 
@@ -291,8 +348,8 @@ export async function listNotes(db: Database, collectionId: string | null, sort:
   return db
     .select()
     .from(n)
-    .where(and(isNull(n.bookId), collectionId === null ? isNull(n.collectionId) : eq(n.collectionId, collectionId)))
-    .orderBy(...orderBy(sort, { name: n.title, created: n.createdAt, updated: n.updatedAt }));
+    .where(and(live(n), isNull(n.bookId), collectionId === null ? isNull(n.collectionId) : eq(n.collectionId, collectionId)))
+    .orderBy(...orderBy(sort, { pinned: n.isPinned, name: n.title, created: n.createdAt, updated: n.updatedAt }));
 }
 
 /** Pages of a book in order. */
@@ -300,7 +357,7 @@ export async function listPages(db: Database, bookId: string): Promise<Note[]> {
   return db
     .select()
     .from(schema.notes)
-    .where(eq(schema.notes.bookId, bookId))
+    .where(and(eq(schema.notes.bookId, bookId), live(schema.notes)))
     .orderBy(asc(schema.notes.position), asc(schema.notes.createdAt));
 }
 
@@ -375,7 +432,10 @@ export async function lockChain(db: Database, kind: ItemKind, id: string): Promi
 /** How many items are locked. */
 export async function countLocked(db: Database): Promise<number> {
   const count = async (table: typeof schema.collections | typeof schema.books | typeof schema.notes) => {
-    const rows = await db.select({ n: sql<number>`count(*)` }).from(table).where(eq(table.isLocked, true));
+    const rows = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(table)
+      .where(and(eq(table.isLocked, true), live(table)));
     return Number(rows[0]?.n ?? 0);
   };
   return (await count(schema.collections)) + (await count(schema.books)) + (await count(schema.notes));
@@ -426,7 +486,7 @@ export async function searchLibrary(db: Database, query: string, limit = 50): Pr
   const collections = await db
     .select()
     .from(schema.collections)
-    .where(and(eq(schema.collections.isLocked, false), like(schema.collections.name)))
+    .where(and(live(schema.collections), eq(schema.collections.isLocked, false), like(schema.collections.name)))
     .orderBy(sql`lower(${schema.collections.name})`)
     .limit(limit);
 
@@ -436,6 +496,7 @@ export async function searchLibrary(db: Database, query: string, limit = 50): Pr
     .leftJoin(schema.collections, eq(schema.books.collectionId, schema.collections.id))
     .where(
       and(
+        live(schema.books),
         eq(schema.books.isLocked, false),
         sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
         like(schema.books.name),
@@ -455,6 +516,7 @@ export async function searchLibrary(db: Database, query: string, limit = 50): Pr
     )
     .where(
       and(
+        live(schema.notes),
         eq(schema.notes.isLocked, false),
         sql`coalesce(${schema.books.isLocked}, 0) = 0`,
         sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
@@ -481,9 +543,21 @@ export interface Favorites {
 
 export async function listFavorites(db: Database): Promise<Favorites> {
   const [collections, books, notes] = await Promise.all([
-    db.select().from(schema.collections).where(eq(schema.collections.isFavorite, true)).orderBy(sql`lower(${schema.collections.name})`),
-    db.select().from(schema.books).where(eq(schema.books.isFavorite, true)).orderBy(sql`lower(${schema.books.name})`),
-    db.select().from(schema.notes).where(eq(schema.notes.isFavorite, true)).orderBy(desc(schema.notes.updatedAt)),
+    db
+      .select()
+      .from(schema.collections)
+      .where(and(eq(schema.collections.isFavorite, true), live(schema.collections)))
+      .orderBy(sql`lower(${schema.collections.name})`),
+    db
+      .select()
+      .from(schema.books)
+      .where(and(eq(schema.books.isFavorite, true), live(schema.books)))
+      .orderBy(sql`lower(${schema.books.name})`),
+    db
+      .select()
+      .from(schema.notes)
+      .where(and(eq(schema.notes.isFavorite, true), live(schema.notes)))
+      .orderBy(desc(schema.notes.updatedAt)),
   ]);
   return { collections, books, notes };
 }
@@ -507,70 +581,158 @@ async function touchParents(db: Database, place: { bookId: string | null; collec
   }
 }
 
-// Undo ----------------------------------------------------------------------
+// Recently deleted -----------------------------------------------------------
 
-export interface Snapshot {
-  collections: Collection[];
-  books: Book[];
-  notes: Note[];
-}
-
-/** Everything a delete would remove, so it can be put back. */
-export async function snapshotCollection(db: Database, id: string): Promise<Snapshot> {
-  const collections = await db.select().from(schema.collections).where(eq(schema.collections.id, id));
-  const books = await db.select().from(schema.books).where(eq(schema.books.collectionId, id));
-  const bookIds = books.map((b) => b.id);
-  const loose = await db.select().from(schema.notes).where(eq(schema.notes.collectionId, id));
-  const pages = bookIds.length
-    ? await db.select().from(schema.notes).where(inArray(schema.notes.bookId, bookIds))
-    : [];
-  return { collections, books, notes: [...loose, ...pages] };
-}
-
-export async function snapshotBook(db: Database, id: string): Promise<Snapshot> {
-  const books = await db.select().from(schema.books).where(eq(schema.books.id, id));
-  const notes = await db.select().from(schema.notes).where(eq(schema.notes.bookId, id));
-  return { collections: [], books, notes };
-}
-
-export async function snapshotNote(db: Database, id: string): Promise<Snapshot> {
-  const notes = await db.select().from(schema.notes).where(eq(schema.notes.id, id));
-  return { collections: [], books: [], notes };
+export interface TrashItem {
+  kind: ItemKind;
+  id: string;
+  name: string;
+  color: string;
+  isLocked: boolean;
+  deletedAt: Date;
+  /** "3 pages", "2 books · 1 note": what comes back with it. */
+  contains: { books: number; pages: number; notes: number };
 }
 
 /**
- * Puts deleted rows back. Rows whose collection or book is gone too land at the top level,
- * so nothing is lost even if the parent was deleted in the meantime.
+ * What's in Recently deleted, newest first. Things deleted along with a collection or book are
+ * listed under it, not on their own.
  */
-export async function restoreSnapshot(db: Database, snap: Snapshot): Promise<void> {
-  const existingCollections = new Set(
-    (await db.select({ id: schema.collections.id }).from(schema.collections)).map((r) => r.id),
+export async function listTrash(db: Database): Promise<TrashItem[]> {
+  const deleted = <T extends { deletedAt: SQLiteColumn }>(table: T) => sql`${table.deletedAt} is not null`;
+  const collections = await db.select().from(schema.collections).where(deleted(schema.collections));
+  const books = await db.select().from(schema.books).where(deleted(schema.books));
+  const notes = await db.select().from(schema.notes).where(deleted(schema.notes));
+
+  const at = (d: Date | null) => d?.getTime() ?? 0;
+  const collectionAt = new Map(collections.map((c) => [c.id, at(c.deletedAt)]));
+  const bookById = new Map(books.map((b) => [b.id, b]));
+  const sameBatch = (parentAt: number | undefined, childAt: number) => parentAt !== undefined && parentAt === childAt;
+
+  const items: TrashItem[] = [];
+  for (const c of collections) {
+    const t = at(c.deletedAt);
+    const inBooks = books.filter((b) => b.collectionId === c.id && at(b.deletedAt) === t);
+    const bookIds = new Set(inBooks.map((b) => b.id));
+    items.push({
+      kind: 'collection',
+      id: c.id,
+      name: c.name,
+      color: c.color,
+      isLocked: c.isLocked,
+      deletedAt: c.deletedAt!,
+      contains: {
+        books: inBooks.length,
+        pages: notes.filter((n) => n.bookId && bookIds.has(n.bookId) && at(n.deletedAt) === t).length,
+        notes: notes.filter((n) => n.collectionId === c.id && at(n.deletedAt) === t).length,
+      },
+    });
+  }
+  for (const b of books) {
+    const t = at(b.deletedAt);
+    if (b.collectionId && sameBatch(collectionAt.get(b.collectionId), t)) continue;
+    items.push({
+      kind: 'book',
+      id: b.id,
+      name: b.name,
+      color: b.color,
+      isLocked: b.isLocked,
+      deletedAt: b.deletedAt!,
+      contains: { books: 0, pages: notes.filter((n) => n.bookId === b.id && at(n.deletedAt) === t).length, notes: 0 },
+    });
+  }
+  for (const n of notes) {
+    const t = at(n.deletedAt);
+    const bookAt = n.bookId ? bookById.get(n.bookId)?.deletedAt : null;
+    if (bookAt && at(bookAt) === t) continue;
+    if (n.collectionId && sameBatch(collectionAt.get(n.collectionId), t)) continue;
+    items.push({
+      kind: 'note',
+      id: n.id,
+      name: n.title || 'Untitled',
+      color: n.color,
+      isLocked: n.isLocked,
+      deletedAt: n.deletedAt!,
+      contains: { books: 0, pages: 0, notes: 0 },
+    });
+  }
+  return items.sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+}
+
+/**
+ * Brings something back from Recently deleted, with whatever was deleted along with it.
+ * If what held it is gone (deleted separately, or for good), it comes back at the top level.
+ */
+export async function restoreDeleted(db: Database, kind: ItemKind, id: string): Promise<void> {
+  const table = kind === 'collection' ? schema.collections : kind === 'book' ? schema.books : schema.notes;
+  const rows = await db.select({ deletedAt: table.deletedAt }).from(table).where(eq(table.id, id));
+  const at = rows[0]?.deletedAt;
+  if (!at) return;
+
+  const liveCollections = new Set(
+    (await db.select({ id: schema.collections.id }).from(schema.collections).where(live(schema.collections))).map((r) => r.id),
   );
-  for (const c of snap.collections) existingCollections.add(c.id);
-  const existingBooks = new Set((await db.select({ id: schema.books.id }).from(schema.books)).map((r) => r.id));
-  for (const b of snap.books) existingBooks.add(b.id);
+  const liveBooks = new Set((await db.select({ id: schema.books.id }).from(schema.books).where(live(schema.books))).map((r) => r.id));
 
   db.transaction((tx) => {
-    if (snap.collections.length) tx.insert(schema.collections).values(snap.collections).onConflictDoNothing().run();
-    if (snap.books.length) {
-      tx.insert(schema.books)
-        .values(snap.books.map((b) => ({ ...b, collectionId: b.collectionId && existingCollections.has(b.collectionId) ? b.collectionId : null })))
-        .onConflictDoNothing()
-        .run();
+    const batch = (t: typeof schema.books | typeof schema.notes) => eq(t.deletedAt, at);
+    if (kind === 'collection') {
+      const bookIds = tx
+        .select({ id: schema.books.id })
+        .from(schema.books)
+        .where(and(eq(schema.books.collectionId, id), batch(schema.books)))
+        .all()
+        .map((b) => b.id);
+      tx.update(schema.collections).set({ deletedAt: null }).where(eq(schema.collections.id, id)).run();
+      tx.update(schema.books).set({ deletedAt: null }).where(and(eq(schema.books.collectionId, id), batch(schema.books))).run();
+      tx.update(schema.notes).set({ deletedAt: null }).where(and(eq(schema.notes.collectionId, id), batch(schema.notes))).run();
+      if (bookIds.length) {
+        tx.update(schema.notes).set({ deletedAt: null }).where(and(inArray(schema.notes.bookId, bookIds), batch(schema.notes))).run();
+      }
+      return;
     }
-    if (snap.notes.length) {
-      tx.insert(schema.notes)
-        .values(
-          snap.notes.map((n) => {
-            if (n.bookId && !existingBooks.has(n.bookId)) return { ...n, bookId: null, collectionId: null };
-            if (n.collectionId && !existingCollections.has(n.collectionId)) return { ...n, collectionId: null };
-            return n;
-          }),
-        )
-        .onConflictDoNothing()
-        .run();
+    if (kind === 'book') {
+      const book = tx.select().from(schema.books).where(eq(schema.books.id, id)).get();
+      const home = book?.collectionId && liveCollections.has(book.collectionId) ? book.collectionId : null;
+      tx.update(schema.books).set({ deletedAt: null, collectionId: home }).where(eq(schema.books.id, id)).run();
+      tx.update(schema.notes).set({ deletedAt: null }).where(and(eq(schema.notes.bookId, id), batch(schema.notes))).run();
+      return;
+    }
+    const note = tx.select().from(schema.notes).where(eq(schema.notes.id, id)).get();
+    if (!note) return;
+    if (note.bookId && !liveBooks.has(note.bookId)) {
+      tx.update(schema.notes).set({ deletedAt: null, bookId: null, collectionId: null }).where(eq(schema.notes.id, id)).run();
+    } else if (note.collectionId && !liveCollections.has(note.collectionId)) {
+      tx.update(schema.notes).set({ deletedAt: null, collectionId: null }).where(eq(schema.notes.id, id)).run();
+    } else {
+      tx.update(schema.notes).set({ deletedAt: null }).where(eq(schema.notes.id, id)).run();
     }
   });
+}
+
+/** Deletes something in Recently deleted for good, with everything that went with it. */
+export async function deleteForever(db: Database, kind: ItemKind, id: string): Promise<void> {
+  const table = kind === 'collection' ? schema.collections : kind === 'book' ? schema.books : schema.notes;
+  const rows = await db.select({ deletedAt: table.deletedAt }).from(table).where(eq(table.id, id));
+  if (!rows[0]?.deletedAt) return;
+  // Foreign keys cascade: a collection takes its books and notes, a book its pages.
+  await db.delete(table).where(eq(table.id, id));
+}
+
+/** Deletes for good everything in Recently deleted, or only what was deleted before `before`. */
+export async function emptyTrash(db: Database, before?: Date): Promise<void> {
+  const cutoff = (t: typeof schema.collections | typeof schema.books | typeof schema.notes) =>
+    before ? sql`${t.deletedAt} is not null and ${t.deletedAt} < ${before.getTime()}` : sql`${t.deletedAt} is not null`;
+  db.transaction((tx) => {
+    tx.delete(schema.notes).where(cutoff(schema.notes)).run();
+    tx.delete(schema.books).where(cutoff(schema.books)).run();
+    tx.delete(schema.collections).where(cutoff(schema.collections)).run();
+  });
+}
+
+/** Removes what has been in Recently deleted longer than {@link TRASH_DAYS}. Run at startup. */
+export async function purgeOldTrash(db: Database, now = new Date()): Promise<void> {
+  await emptyTrash(db, new Date(now.getTime() - TRASH_DAYS * 24 * 60 * 60 * 1000));
 }
 
 // Settings ------------------------------------------------------------------

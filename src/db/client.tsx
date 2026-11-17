@@ -9,6 +9,8 @@ import { createStyles } from '@/theme';
 
 import migrations from '../../drizzle/migrations';
 
+import { purgeOldTrash } from '@/features/library/library';
+
 import * as schema from './schema';
 
 export const DATABASE_NAME = 'pb-notes.db';
@@ -63,6 +65,8 @@ async function initializeDatabase(sqlite: SQLiteDatabase) {
   await sqlite.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   const db = drizzle(sqlite, { schema });
   await migrate(db, migrations);
+  // Anything in Recently deleted for more than 30 days is removed for good.
+  await purgeOldTrash(db);
 }
 
 function OpenFailed({ error, onRetry }: { error: unknown; onRetry: () => void }) {

@@ -1,6 +1,6 @@
 # PB Notes plan
 
-**Current phase:** Milestone 3 (polish and launch prep)
+**Current phase:** Milestone 3 (polish and launch prep), waiting on phone testing and the name
 
 A local-first note taking app organized like a shelf: **Collections** hold **Books** and loose **Notes**; Books hold ordered **Pages**. Books and notes can also live at the top level. Android first (Google Play).
 
@@ -32,13 +32,18 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - [x] Reorder pages by dragging, with arrow buttons as an accessible alternative
 - [x] Tests for search, locks, reordering, backup format, restore and Markdown
 
-## Milestone 3: polish and launch prep (not started)
+## Milestone 3: polish and launch prep
 
+- [x] Formatting toolbar: Title, Heading, Subheading, bulleted and numbered lists, checklists, quote, indent and outdent, bold, italic, underline, strikethrough, inline code, highlight, links, undo and redo
+- [x] Markdown shortcuts while typing (`# `, `## `, `- `, `1. `, `[ ] `)
+- [x] Pin collections, books and notes to the top of their lists
+- [x] Recently deleted: deletes are kept 30 days, with restore, delete for good and empty
+- [x] Own icon, adaptive icon and splash (bookshelf), replacing the Healthy Habits placeholders
+- [x] Privacy policy draft (`docs/privacy-policy.md`) and Play Store listing draft (`docs/store-listing.md`)
 - [ ] Test drag to reorder, biometrics, share sheet and file picker on a real Android phone
-- [ ] App name, icon and splash (current name and icons are placeholders)
-- [ ] Privacy policy and Play Store listing
-- [ ] Owner checklist before publishing: contact email, developer name, package id
-- [ ] Ideas: pin notes to the top of a collection, note templates, trash with 30 day restore
+- [ ] Pick the app name (then update `app.json`, the listing and the policy)
+- [ ] Owner checklist before publishing: contact email (privacy policy), developer name, package id
+- [ ] Ideas: note templates, code blocks and dividers in the editor (needs a custom editor build)
 
 ## Decisions log
 
@@ -50,3 +55,6 @@ A local-first note taking app organized like a shelf: **Collections** hold **Boo
 - 2026-11-16: Locks hide content, they don't encrypt it on the device. Backups can be encrypted, and include locked items, so the passphrase option is on by default.
 - 2026-11-16: Restore offers "Add to my library" (by id, nothing changed) or "Replace my library". Merging leaves settings alone.
 - 2026-11-16: Drag to reorder is built on Gesture Handler 3 and Reanimated directly (no extra library). Arrow buttons stay for accessibility.
+- 2026-11-16: Deleting moves items to Recently deleted (a `deleted_at` time) instead of removing rows. Things deleted together share the time, so they restore together. Undo restores from there. A blank note made by mistake skips it.
+- 2026-11-16: The editor keeps TenTap's built in editor page, with our own toolbar. Code blocks and dividers would need a custom editor build (like Healthy Habits' `editor-web/`), so they wait.
+- 2026-11-16: Highlight color is one see-through yellow saved in the note, so it reads in light and dark.

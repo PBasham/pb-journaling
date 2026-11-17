@@ -17,11 +17,8 @@ import {
   deleteNote,
   moveBook,
   moveNote,
-  restoreSnapshot,
+  restoreDeleted,
   shiftPage,
-  snapshotBook,
-  snapshotCollection,
-  snapshotNote,
   updateBook,
   updateCollection,
   updateNote,
@@ -142,6 +139,18 @@ function Menu({
     onClose();
   };
 
+  const togglePin = () => {
+    const isPinned = !item.isPinned;
+    const save =
+      kind === 'collection'
+        ? updateCollection(db, item.id, { isPinned })
+        : kind === 'book'
+          ? updateBook(db, item.id, { isPinned })
+          : updateNote(db, item.id, { isPinned });
+    run(save, 'Could not change the pin.');
+    onClose();
+  };
+
   const shift = (step: -1 | 1) => {
     run(shiftPage(db, item.id, step), 'Could not move the page.');
     onClose();
@@ -164,6 +173,14 @@ function Menu({
           divider
           onPress={toggleFavorite}
         />
+        {!isPage ? (
+          <ListRow
+            icon={item.isPinned ? 'pin' : 'pin-outline'}
+            title={item.isPinned ? 'Unpin' : 'Pin to top'}
+            divider
+            onPress={togglePin}
+          />
+        ) : null}
         {kind !== 'collection' ? (
           <ListRow icon="folder-open-outline" title="Move to…" divider onPress={() => onStep('move')} />
         ) : null}
@@ -309,31 +326,28 @@ function DeleteSheet({
   const db = useDb();
   const styles = useStyles();
   const name = label(target);
+  const { kind, item } = target;
 
-  const remove = (work: () => Promise<{ restore: () => Promise<void> }>, message: string) => {
+  /** Moves it to Recently deleted, with Undo for a few seconds. */
+  const remove = (work: () => Promise<void>, message: string) => {
     onClose();
     run(
-      work().then(({ restore }) => {
-        showUndo(message, restore);
-        onDeleted?.(target.kind);
+      work().then(() => {
+        showUndo(message, () => restoreDeleted(db, kind, item.id));
+        onDeleted?.(kind);
       }),
       'Could not delete it.',
     );
   };
 
-  if (target.kind === 'collection') {
-    const id = target.item.id;
-    const del = (mode: CollectionDeleteMode) =>
-      remove(async () => {
-        const snap = await snapshotCollection(db, id);
-        await deleteCollection(db, id, mode);
-        return { restore: () => restoreSnapshot(db, snap) };
-      }, `Deleted ${name}.`);
+  if (kind === 'collection') {
+    const del = (mode: CollectionDeleteMode) => remove(() => deleteCollection(db, item.id, mode), `Deleted ${name}.`);
     return (
       <Sheet visible={visible} onClose={onClose}>
         <Text variant="heading">Delete “{name}”?</Text>
         <Text color="textMuted">
-          You can keep what&apos;s inside (its books and notes move to the top of your library) or delete everything.
+          Keep what&apos;s inside (its books and notes move to the top of your library) or delete everything. Deleted
+          items stay in Recently deleted for 30 days.
         </Text>
         <View style={styles.list}>
           <Button title="Delete collection, keep contents" variant="secondary" onPress={() => del('keepContents')} />
@@ -344,43 +358,30 @@ function DeleteSheet({
     );
   }
 
-  if (target.kind === 'book') {
-    const id = target.item.id;
+  if (kind === 'book') {
     return (
       <ConfirmDialog
         visible={visible}
         title={`Delete “${name}”?`}
-        message="The book and all of its pages will be deleted."
+        message="The book and its pages move to Recently deleted. You can restore them for 30 days."
         confirmLabel="Delete"
         destructive
         onCancel={onClose}
-        onConfirm={() =>
-          remove(async () => {
-            const snap = await snapshotBook(db, id);
-            await deleteBook(db, id);
-            return { restore: () => restoreSnapshot(db, snap) };
-          }, `Deleted ${name}.`)
-        }
+        onConfirm={() => remove(() => deleteBook(db, item.id), `Deleted ${name}.`)}
       />
     );
   }
 
-  const id = target.item.id;
-  const isPage = !!target.item.bookId;
+  const isPage = !!item.bookId;
   return (
     <ConfirmDialog
       visible={visible}
       title={`Delete this ${isPage ? 'page' : 'note'}?`}
+      message="It moves to Recently deleted. You can restore it for 30 days."
       confirmLabel="Delete"
       destructive
       onCancel={onClose}
-      onConfirm={() =>
-        remove(async () => {
-          const snap = await snapshotNote(db, id);
-          await deleteNote(db, id);
-          return { restore: () => restoreSnapshot(db, snap) };
-        }, isPage ? 'Page deleted.' : 'Note deleted.')
-      }
+      onConfirm={() => remove(() => deleteNote(db, item.id), isPage ? 'Page deleted.' : 'Note deleted.')}
     />
   );
 }

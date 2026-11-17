@@ -164,6 +164,12 @@ export function isItemColor(value: unknown): value is ItemColor {
   return typeof value === 'string' && value in itemColors;
 }
 
+/**
+ * Highlighter color saved inside note documents. It's stored in the note, so it is one value that
+ * reads on both light and dark backgrounds (a see-through yellow), never a theme color.
+ */
+export const highlightColor = 'rgba(250, 204, 21, 0.4)';
+
 export const spacing = {
   xxs: 2,
   xs: 4,

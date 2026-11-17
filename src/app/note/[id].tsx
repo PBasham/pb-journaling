@@ -140,5 +140,6 @@ const useStyles = createStyles((t) => ({
     color: t.colors.text,
     paddingVertical: t.spacing.sm,
   },
-  editor: { flex: 1, paddingHorizontal: t.spacing.lg, paddingTop: t.spacing.sm },
+  // No side padding: the editor pads its own text, so the toolbar can run edge to edge.
+  editor: { flex: 1, paddingTop: t.spacing.sm },
 }));

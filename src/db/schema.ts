@@ -16,6 +16,17 @@
 import { sql } from 'drizzle-orm';
 import { check, index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
+/** Shared by collections, books and notes. */
+const itemFlags = {
+  /** Shown first in its list. */
+  isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Set when moved to Recently deleted. Rows deleted together share the same time, so restoring a
+   * collection or book brings back exactly what was deleted with it. Gone for good after 30 days.
+   */
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+};
+
 const timestamps = {
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
@@ -32,6 +43,7 @@ export const collections = sqliteTable('collections', {
   isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
   /** Opening it asks for the lock PIN or password. Locks everything inside too. */
   isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
+  ...itemFlags,
   ...timestamps,
 });
 
@@ -45,6 +57,7 @@ export const books = sqliteTable(
     color: text('color').notNull().default('slate'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
+    ...itemFlags,
     ...timestamps,
   },
   (t) => [index('books_collection_idx').on(t.collectionId)],
@@ -68,6 +81,7 @@ export const notes = sqliteTable(
     color: text('color').notNull().default('slate'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
     isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
+    ...itemFlags,
     ...timestamps,
   },
   (t) => [

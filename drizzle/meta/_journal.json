@@ -15,6 +15,13 @@
       "when": 1794876400266,
       "tag": "0001_item_locks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794877816715,
+      "tag": "0002_pins_and_trash",
+      "breakpoints": true
     }
   ]
 }

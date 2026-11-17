@@ -4,7 +4,7 @@ import { useDb } from '@/db';
 import type { Note } from '@/db/schema';
 import { reportError, run } from '@/lib/errors';
 
-import { deleteNote, updateNote } from '../library/library';
+import { discardNote, updateNote } from '../library/library';
 
 import { isDocEmpty, parseDoc, type Doc } from './document';
 
@@ -97,7 +97,7 @@ export function useNoteDraft(note: Note, isNew: boolean) {
           setTimeout(() => {
             pendingRemovals.delete(id);
             run(
-              queue.current.then(() => deleteNote(db, id)),
+              queue.current.then(() => discardNote(db, id)),
               'Could not remove the empty note.',
             );
           }, 0),

@@ -16,10 +16,11 @@ interface PressProps {
   onLongPress?: () => void;
 }
 
-function Marks({ favorite, locked }: { favorite: boolean; locked: boolean }) {
+function Marks({ favorite, locked, pinned }: { favorite: boolean; locked: boolean; pinned?: boolean }) {
   const theme = useTheme();
   return (
     <>
+      {pinned ? <Ionicons name="pin" size={14} color={theme.colors.textMuted} accessibilityLabel="Pinned" /> : null}
       {locked ? <Ionicons name="lock-closed" size={14} color={theme.colors.textMuted} accessibilityLabel="Locked" /> : null}
       {favorite ? <Ionicons name="star" size={14} color={theme.colors.primary} accessibilityLabel="Favorite" /> : null}
     </>
@@ -45,7 +46,7 @@ export function CollectionCard({ collection, onPress, onLongPress }: { collectio
           <Text variant="bodyStrong" numberOfLines={1} style={styles.flex}>
             {collection.name}
           </Text>
-          <Marks favorite={collection.isFavorite} locked={collection.isLocked} />
+          <Marks favorite={collection.isFavorite} locked={collection.isLocked} pinned={collection.isPinned} />
         </View>
         <View style={styles.metaRow}>
           <Text variant="caption" color="textMuted" style={styles.flex}>
@@ -77,7 +78,7 @@ export function BookCard({ book, onPress, onLongPress }: { book: BookWithCounts 
           <Text variant="bodyStrong" numberOfLines={2} style={styles.flex}>
             {book.name}
           </Text>
-          <Marks favorite={book.isFavorite} locked={book.isLocked} />
+          <Marks favorite={book.isFavorite} locked={book.isLocked} pinned={book.isPinned} />
         </View>
         <Text variant="caption" color="textMuted">
           {plural(book.pageCount, 'page')}
@@ -127,7 +128,7 @@ export function NoteRow({
           <Text variant="bodyStrong" numberOfLines={1} color={note.title ? 'text' : 'textMuted'} style={styles.flex}>
             {title}
           </Text>
-          <Marks favorite={note.isFavorite} locked={note.isLocked} />
+          <Marks favorite={note.isFavorite} locked={note.isLocked} pinned={!note.bookId && note.isPinned} />
           <Text variant="caption" color="textMuted">
             {formatWhen(note.updatedAt)}
           </Text>
