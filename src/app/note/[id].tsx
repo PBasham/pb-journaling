@@ -10,6 +10,7 @@ import { parseDoc } from '@/features/editor/document';
 import { RichTextEditor, type RichTextEditorHandle } from '@/features/editor/RichTextEditor';
 import { useNoteDraft } from '@/features/editor/useNoteDraft';
 import { ItemActions, type ActionTarget } from '@/features/library/components';
+import { ItemLockGate } from '@/features/lock';
 import { updateNote } from '@/features/library/library';
 import { useBook, useCollection, useNote, usePages } from '@/features/library/queries';
 import { run } from '@/lib/errors';
@@ -30,7 +31,11 @@ export default function NoteScreen() {
     );
   }
   if (!initial) return null;
-  return <NoteEditor key={initial.id} initial={initial} current={note ?? initial} isNew={isNew === '1'} />;
+  return (
+    <ItemLockGate kind="note" id={initial.id} name={initial.title || undefined}>
+      <NoteEditor key={initial.id} initial={initial} current={note ?? initial} isNew={isNew === '1'} />
+    </ItemLockGate>
+  );
 }
 
 function NoteEditor({ initial, current, isNew }: { initial: Note; current: Note; isNew: boolean }) {

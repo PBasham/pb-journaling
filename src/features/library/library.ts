@@ -2,7 +2,7 @@
  * Everything that reads or changes the library: collections, books, pages and notes.
  * Plain functions over the database, so they are tested against a real SQLite in Jest.
  */
-import { and, asc, desc, eq, inArray, isNull, max, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, max, or, sql, type SQL } from 'drizzle-orm';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 import type { Database } from '@/db/client';
@@ -64,11 +64,12 @@ export async function createCollection(db: Database, input: CollectionInput): Pr
 export async function updateCollection(
   db: Database,
   id: string,
-  patch: Partial<CollectionInput> & { isFavorite?: boolean },
+  patch: Partial<CollectionInput> & { isFavorite?: boolean; isLocked?: boolean },
 ): Promise<void> {
   await db
     .update(schema.collections)
     .set({
+      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
       ...(patch.name !== undefined ? { name: cleanName(patch.name) || 'Untitled collection' } : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
       ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
@@ -141,11 +142,12 @@ export async function createBook(db: Database, input: BookInput & Place): Promis
 export async function updateBook(
   db: Database,
   id: string,
-  patch: Partial<BookInput> & { isFavorite?: boolean },
+  patch: Partial<BookInput> & { isFavorite?: boolean; isLocked?: boolean },
 ): Promise<void> {
   await db
     .update(schema.books)
     .set({
+      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
       ...(patch.name !== undefined ? { name: cleanName(patch.name) || 'Untitled book' } : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
       ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
@@ -230,7 +232,7 @@ export async function createNote(db: Database, place: NotePlace, input: NoteInpu
 export async function updateNote(
   db: Database,
   id: string,
-  patch: NoteInput & { isFavorite?: boolean },
+  patch: NoteInput & { isFavorite?: boolean; isLocked?: boolean },
 ): Promise<void> {
   const edited = patch.title !== undefined || patch.doc !== undefined || patch.color !== undefined;
   await db
@@ -242,6 +244,7 @@ export async function updateNote(
         : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
       ...(patch.isFavorite !== undefined ? { isFavorite: patch.isFavorite } : {}),
+      ...(patch.isLocked !== undefined ? { isLocked: patch.isLocked } : {}),
       ...(edited ? { updatedAt: new Date() } : {}),
     })
     .where(eq(schema.notes.id, id));
@@ -317,6 +320,155 @@ export async function shiftPage(db: Database, id: string, step: -1 | 1): Promise
       tx.update(schema.notes).set({ position: i + 1 }).where(eq(schema.notes.id, p.id)).run();
     });
   });
+}
+
+// Reordering ----------------------------------------------------------------
+
+/** Puts a book's pages in the given order. Ids not in the book are ignored; missing ones go last. */
+export async function reorderPages(db: Database, bookId: string, orderedIds: string[]): Promise<void> {
+  const pages = await listPages(db, bookId);
+  const known = new Set(pages.map((p) => p.id));
+  const order = orderedIds.filter((id) => known.has(id));
+  for (const p of pages) if (!order.includes(p.id)) order.push(p.id);
+  db.transaction((tx) => {
+    order.forEach((id, i) => {
+      tx.update(schema.notes).set({ position: i + 1 }).where(eq(schema.notes.id, id)).run();
+    });
+  });
+}
+
+// Locks ---------------------------------------------------------------------
+
+export type ItemKind = 'collection' | 'book' | 'note';
+
+/**
+ * The locked items guarding something: itself and whatever holds it (a note's book, the book's
+ * collection). Empty when nothing on the way is locked. Opening the item needs all of these unlocked.
+ */
+export async function lockChain(db: Database, kind: ItemKind, id: string): Promise<string[]> {
+  const locked: string[] = [];
+  let collectionId: string | null = null;
+  let bookId: string | null = null;
+  if (kind === 'note') {
+    const note = await getNote(db, id);
+    if (!note) return locked;
+    if (note.isLocked) locked.push(note.id);
+    bookId = note.bookId;
+    collectionId = note.collectionId;
+  } else if (kind === 'book') {
+    bookId = id;
+  } else {
+    collectionId = id;
+  }
+  if (bookId) {
+    const book = await getBook(db, bookId);
+    if (book?.isLocked) locked.push(book.id);
+    collectionId = book?.collectionId ?? collectionId;
+  }
+  if (collectionId) {
+    const collection = await getCollection(db, collectionId);
+    if (collection?.isLocked) locked.push(collection.id);
+  }
+  return locked;
+}
+
+/** How many items are locked. */
+export async function countLocked(db: Database): Promise<number> {
+  const count = async (table: typeof schema.collections | typeof schema.books | typeof schema.notes) => {
+    const rows = await db.select({ n: sql<number>`count(*)` }).from(table).where(eq(table.isLocked, true));
+    return Number(rows[0]?.n ?? 0);
+  };
+  return (await count(schema.collections)) + (await count(schema.books)) + (await count(schema.notes));
+}
+
+/** Unlocks every item, for when the PIN or password is removed. */
+export async function clearAllLocks(db: Database): Promise<void> {
+  db.transaction((tx) => {
+    tx.update(schema.collections).set({ isLocked: false }).where(eq(schema.collections.isLocked, true)).run();
+    tx.update(schema.books).set({ isLocked: false }).where(eq(schema.books.isLocked, true)).run();
+    tx.update(schema.notes).set({ isLocked: false }).where(eq(schema.notes.isLocked, true)).run();
+  });
+}
+
+// Search --------------------------------------------------------------------
+
+/** A LIKE pattern matching `text` anywhere, with `%`, `_` and `\` taken literally. */
+export function likePattern(text: string): string {
+  return `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+export interface SearchResults {
+  collections: Collection[];
+  books: Book[];
+  notes: (Note & { snippet: string })[];
+}
+
+/** A short piece of `text` around the first match, on one line. */
+export function snippetAround(text: string, query: string, radius = 50): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  const at = flat.toLowerCase().indexOf(query.toLowerCase());
+  if (at < 0) return flat.length > radius * 2 ? `${flat.slice(0, radius * 2).trimEnd()}…` : flat;
+  const start = Math.max(0, at - radius);
+  const end = Math.min(flat.length, at + query.length + radius);
+  return `${start > 0 ? '…' : ''}${flat.slice(start, end).trim()}${end < flat.length ? '…' : ''}`;
+}
+
+/**
+ * Finds collections, books and notes by name, title or text. Anything locked, or inside something
+ * locked, is left out, so search never reveals what a lock hides.
+ */
+export async function searchLibrary(db: Database, query: string, limit = 50): Promise<SearchResults> {
+  const q = query.trim();
+  if (!q) return { collections: [], books: [], notes: [] };
+  const pattern = likePattern(q);
+  const like = (column: SQLiteColumn) => sql`${column} like ${pattern} escape '\\'`;
+
+  const collections = await db
+    .select()
+    .from(schema.collections)
+    .where(and(eq(schema.collections.isLocked, false), like(schema.collections.name)))
+    .orderBy(sql`lower(${schema.collections.name})`)
+    .limit(limit);
+
+  const bookRows = await db
+    .select({ book: schema.books })
+    .from(schema.books)
+    .leftJoin(schema.collections, eq(schema.books.collectionId, schema.collections.id))
+    .where(
+      and(
+        eq(schema.books.isLocked, false),
+        sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
+        like(schema.books.name),
+      ),
+    )
+    .orderBy(sql`lower(${schema.books.name})`)
+    .limit(limit);
+
+  // A note's collection is its own, or its book's.
+  const noteRows = await db
+    .select({ note: schema.notes })
+    .from(schema.notes)
+    .leftJoin(schema.books, eq(schema.notes.bookId, schema.books.id))
+    .leftJoin(
+      schema.collections,
+      sql`${schema.collections.id} = coalesce(${schema.notes.collectionId}, ${schema.books.collectionId})`,
+    )
+    .where(
+      and(
+        eq(schema.notes.isLocked, false),
+        sql`coalesce(${schema.books.isLocked}, 0) = 0`,
+        sql`coalesce(${schema.collections.isLocked}, 0) = 0`,
+        or(like(schema.notes.title), like(schema.notes.contentText)),
+      ),
+    )
+    .orderBy(desc(schema.notes.updatedAt))
+    .limit(limit);
+
+  return {
+    collections,
+    books: bookRows.map((r) => r.book),
+    notes: noteRows.map(({ note }) => ({ ...note, snippet: snippetAround(note.contentText, q) })),
+  };
 }
 
 // Favorites -----------------------------------------------------------------

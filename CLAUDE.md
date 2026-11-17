@@ -16,6 +16,9 @@ Read `AGENTS.md` (Expo guidance) and `PLAN.md` (roadmap and status) before start
 - Database: edit `src/db/schema.ts`, then `npm run db:generate`. Never edit generated files in `drizzle/` except `migrations.d.ts`. Never delete user data to fix a migration.
 - All library reads and writes go through `src/features/library/library.ts` (tested in Jest against real SQLite).
 - Screens use `useLive` (`src/db/useLive.ts`) for data that must refresh when other tables change.
+- Settings live in the `settings` table through `useSetting` (`src/features/settings/settings.ts`). Lock settings are the exception: they live in secure storage.
+- Secrets (PIN, password) are stored only as salted hashes in `expo-secure-store`, never in SQLite or plain text.
+- Locked items (or anything inside a locked collection or book) never show their text outside their own screen: not in search, previews or exports unless the person chose that.
 - Nothing fails silently: event handlers pass promises to `run()` from `src/lib/errors`.
 - Before finishing: `npm run typecheck`, `npm run lint`, `npm test`. For UI changes also `npm run e2e:build && npm run e2e`.
 

@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Button, ConfirmDialog, ListGroup, ListRow, Sheet, Text } from '@/components/ui';
+import { router } from 'expo-router';
+
 import { useDb } from '@/db';
+import { useLock } from '@/features/lock';
 import type { Book, Collection, Note } from '@/db/schema';
 import { run, showInfo, showUndo } from '@/lib/errors';
 import { createStyles, isItemColor, itemColorValue, useTheme, type ItemColor } from '@/theme';
@@ -78,8 +81,54 @@ function Menu({
   onClose: () => void;
 }) {
   const db = useDb();
+  const { config, isUnlocked, keepOpen } = useLock();
   const { kind, item } = target;
   const isPage = kind === 'note' && !!item.bookId;
+  // A locked item shows no options until it has been opened with the PIN or password.
+  const sealed = item.isLocked && !!config && !isUnlocked([item.id]);
+
+  const open = () => {
+    onClose();
+    if (kind === 'collection') router.push({ pathname: '/collection/[id]', params: { id: item.id } });
+    else if (kind === 'book') router.push({ pathname: '/book/[id]', params: { id: item.id } });
+    else router.push({ pathname: '/note/[id]', params: { id: item.id } });
+  };
+
+  const toggleLock = () => {
+    onClose();
+    if (!config) {
+      showInfo('Set a PIN or password first. Then you can lock collections, books and notes.');
+      router.push('/settings/lock');
+      return;
+    }
+    const isLocked = !item.isLocked;
+    // Whoever locks it is already in: keep it open until the app locks again.
+    if (isLocked) keepOpen([item.id]);
+    const save =
+      kind === 'collection'
+        ? updateCollection(db, item.id, { isLocked })
+        : kind === 'book'
+          ? updateBook(db, item.id, { isLocked })
+          : updateNote(db, item.id, { isLocked });
+    run(
+      save.then(() => showInfo(isLocked ? 'Locked. It will ask for your PIN or password next time.' : 'Lock removed.')),
+      'Could not change the lock.',
+    );
+  };
+
+  if (sealed) {
+    return (
+      <Sheet visible={visible} onClose={onClose}>
+        <Text variant="heading" numberOfLines={1}>
+          {label(target)}
+        </Text>
+        <Text color="textMuted">This is locked. Open it with your PIN or password to see its options.</Text>
+        <ListGroup>
+          <ListRow icon="lock-open-outline" title="Open" onPress={open} />
+        </ListGroup>
+      </Sheet>
+    );
+  }
 
   const toggleFavorite = () => {
     const isFavorite = !item.isFavorite;
@@ -124,6 +173,13 @@ function Menu({
             <ListRow icon="arrow-down" title="Move page down" divider onPress={() => shift(1)} />
           </>
         ) : null}
+        <ListRow
+          icon={item.isLocked ? 'lock-open-outline' : 'lock-closed-outline'}
+          title={item.isLocked ? 'Remove lock' : 'Lock'}
+          description={item.isLocked ? undefined : kind === 'note' ? 'Ask for your PIN or password to open it' : 'Locks everything inside too'}
+          divider
+          onPress={toggleLock}
+        />
         <ListRow icon="trash-outline" title="Delete" destructive divider onPress={() => onStep('delete')} />
       </ListGroup>
     </Sheet>

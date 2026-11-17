@@ -11,3 +11,5 @@ export { SegmentedControl } from './SegmentedControl';
 export { Sheet } from './Sheet';
 export { Text, type TextProps } from './Text';
 export { TextField } from './TextField';
+export { Card } from './Card';
+export { Toggle } from './Toggle';

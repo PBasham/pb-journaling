@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import type { Note } from '@/db/schema';
+import { useSetting } from '@/features/settings/settings';
 import { formatWhen, plural } from '@/lib/dates';
 import { createStyles, itemColorValue, useTheme } from '@/theme';
 
@@ -15,10 +16,14 @@ interface PressProps {
   onLongPress?: () => void;
 }
 
-function FavoriteMark({ on }: { on: boolean }) {
+function Marks({ favorite, locked }: { favorite: boolean; locked: boolean }) {
   const theme = useTheme();
-  if (!on) return null;
-  return <Ionicons name="star" size={14} color={theme.colors.primary} accessibilityLabel="Favorite" />;
+  return (
+    <>
+      {locked ? <Ionicons name="lock-closed" size={14} color={theme.colors.textMuted} accessibilityLabel="Locked" /> : null}
+      {favorite ? <Ionicons name="star" size={14} color={theme.colors.primary} accessibilityLabel="Favorite" /> : null}
+    </>
+  );
 }
 
 export function CollectionCard({ collection, onPress, onLongPress }: { collection: CollectionWithCounts } & PressProps) {
@@ -28,7 +33,7 @@ export function CollectionCard({ collection, onPress, onLongPress }: { collectio
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Collection ${collection.name}, ${counts}`}
+      accessibilityLabel={`Collection ${collection.name}${collection.isLocked ? ', locked' : ''}, ${counts}`}
       accessibilityHint="Opens the collection. Long press for options."
       onPress={onPress}
       onLongPress={onLongPress}
@@ -40,7 +45,7 @@ export function CollectionCard({ collection, onPress, onLongPress }: { collectio
           <Text variant="bodyStrong" numberOfLines={1} style={styles.flex}>
             {collection.name}
           </Text>
-          <FavoriteMark on={collection.isFavorite} />
+          <Marks favorite={collection.isFavorite} locked={collection.isLocked} />
         </View>
         <View style={styles.metaRow}>
           <Text variant="caption" color="textMuted" style={styles.flex}>
@@ -61,7 +66,7 @@ export function BookCard({ book, onPress, onLongPress }: { book: BookWithCounts 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Book ${book.name}, ${plural(book.pageCount, 'page')}`}
+      accessibilityLabel={`Book ${book.name}${book.isLocked ? ', locked' : ''}, ${plural(book.pageCount, 'page')}`}
       accessibilityHint="Opens the book. Long press for options."
       onPress={onPress}
       onLongPress={onLongPress}
@@ -72,7 +77,7 @@ export function BookCard({ book, onPress, onLongPress }: { book: BookWithCounts 
           <Text variant="bodyStrong" numberOfLines={2} style={styles.flex}>
             {book.name}
           </Text>
-          <FavoriteMark on={book.isFavorite} />
+          <Marks favorite={book.isFavorite} locked={book.isLocked} />
         </View>
         <Text variant="caption" color="textMuted">
           {plural(book.pageCount, 'page')}
@@ -99,12 +104,14 @@ export function NoteRow({
 }: { note: Note; /** Shown before the title, like a page number. */ label?: string } & PressProps) {
   const styles = useStyles();
   const theme = useTheme();
+  const [showPreviews] = useSetting('showPreviews');
   const title = note.title || 'Untitled';
-  const preview = previewText(note.contentText);
+  // A locked note's text never shows in a list.
+  const preview = showPreviews && !note.isLocked ? previewText(note.contentText) : '';
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label ? `${label}, ` : ''}${title}${preview ? `, ${preview}` : ''}`}
+      accessibilityLabel={`${label ? `${label}, ` : ''}${title}${note.isLocked ? ', locked' : ''}${preview ? `, ${preview}` : ''}`}
       accessibilityHint="Opens it. Long press for options."
       onPress={onPress}
       onLongPress={onLongPress}
@@ -120,7 +127,7 @@ export function NoteRow({
           <Text variant="bodyStrong" numberOfLines={1} color={note.title ? 'text' : 'textMuted'} style={styles.flex}>
             {title}
           </Text>
-          <FavoriteMark on={note.isFavorite} />
+          <Marks favorite={note.isFavorite} locked={note.isLocked} />
           <Text variant="caption" color="textMuted">
             {formatWhen(note.updatedAt)}
           </Text>

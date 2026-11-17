@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useContentHidden } from '@/features/lock/LockProvider';
 import { createStyles, useTheme } from '@/theme';
 
 import { ErrorToast } from './ErrorToast';
@@ -17,9 +18,11 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  // Modals draw above the lock screen, so hide while the app is locked or in the background.
+  const hidden = useContentHidden();
   return (
     <Modal
-      visible={visible}
+      visible={visible && !hidden}
       transparent
       animationType="fade"
       onRequestClose={onClose}

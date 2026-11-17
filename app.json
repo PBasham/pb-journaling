@@ -19,7 +19,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.pbasham.pbnotes",
-      "allowBackup": true
+      "allowBackup": true,
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "output": "single",
@@ -46,7 +50,15 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock PB Notes with Face ID."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -48,6 +48,10 @@ const lightColorValues = {
   danger: palette.red600,
   shadow: '#000000',
   overlay: 'rgba(20, 18, 16, 0.5)',
+
+  tabBar: palette.paper0,
+  tabActive: palette.indigo600,
+  tabInactive: palette.ink600,
 };
 
 export type ThemeColors = { [K in keyof typeof lightColorValues]: string };
@@ -72,7 +76,67 @@ export const darkColors: ThemeColors = {
   danger: palette.red400,
   shadow: '#000000',
   overlay: 'rgba(0, 0, 0, 0.6)',
+
+  tabBar: palette.night900,
+  tabActive: palette.indigo400,
+  tabInactive: palette.ink400,
 };
+
+/**
+ * Accent colors for buttons, links and highlights. Each keeps the contrast rules the default
+ * indigo follows: the light primary works as text on the background and behind white text
+ * (4.5:1 or better), the dark primary as text on the dark background and behind dark text.
+ */
+export const accents = {
+  indigo: {
+    label: 'Indigo',
+    light: { primary: palette.indigo600, pressed: palette.indigo700, soft: palette.indigo50 },
+    dark: { primary: palette.indigo400, pressed: palette.indigo500, soft: palette.indigo900 },
+  },
+  teal: {
+    label: 'Teal',
+    light: { primary: '#2F7570', pressed: '#245C58', soft: '#EAF5F4' },
+    dark: { primary: '#6CC3BB', pressed: '#3F8F89', soft: '#173634' },
+  },
+  blue: {
+    label: 'Blue',
+    light: { primary: '#2F62B0', pressed: '#244E8E', soft: '#EAF0FB' },
+    dark: { primary: '#8AB0F0', pressed: '#6890D0', soft: '#1A2840' },
+  },
+  purple: {
+    label: 'Purple',
+    light: { primary: '#6B4FA8', pressed: '#553E87', soft: '#F1EDF8' },
+    dark: { primary: '#B79CE6', pressed: '#8E72C2', soft: '#2A2238' },
+  },
+  rose: {
+    label: 'Rose',
+    light: { primary: '#A8436B', pressed: '#8A3557', soft: '#F9EBF1' },
+    dark: { primary: '#EB9BBB', pressed: '#C7779A', soft: '#3A1F2A' },
+  },
+  green: {
+    label: 'Green',
+    light: { primary: '#2F7A45', pressed: '#23603A', soft: '#EAF5EC' },
+    dark: { primary: '#7FCB93', pressed: '#5BA872', soft: '#1A3322' },
+  },
+  amber: {
+    label: 'Amber',
+    light: { primary: '#94600F', pressed: '#7A4F0C', soft: '#FBF1E2' },
+    dark: { primary: '#F0B85A', pressed: '#CF9840', soft: '#3A2C14' },
+  },
+} as const;
+
+export type AccentName = keyof typeof accents;
+
+export function isAccentName(value: unknown): value is AccentName {
+  return typeof value === 'string' && value in accents;
+}
+
+/** The base colors for a scheme with an accent swapped in. */
+export function colorsFor(scheme: 'light' | 'dark', accent: AccentName): ThemeColors {
+  const base = scheme === 'dark' ? darkColors : lightColors;
+  const a = (accents[accent] ?? accents.indigo)[scheme];
+  return { ...base, primary: a.primary, primaryPressed: a.pressed, primarySoft: a.soft, tabActive: a.primary };
+}
 
 /**
  * Colors a person can give a collection, book or note. Stored by name, so the shades can change

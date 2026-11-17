@@ -30,6 +30,8 @@ export const collections = sqliteTable('collections', {
   name: text('name').notNull(),
   color: text('color').notNull().default('slate'),
   isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+  /** Opening it asks for the lock PIN or password. Locks everything inside too. */
+  isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
   ...timestamps,
 });
 
@@ -42,6 +44,7 @@ export const books = sqliteTable(
     name: text('name').notNull(),
     color: text('color').notNull().default('slate'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
     ...timestamps,
   },
   (t) => [index('books_collection_idx').on(t.collectionId)],
@@ -64,6 +67,7 @@ export const notes = sqliteTable(
     contentText: text('content_text').notNull().default(''),
     color: text('color').notNull().default('slate'),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+    isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
     ...timestamps,
   },
   (t) => [
