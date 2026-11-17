@@ -1,6 +1,0 @@
-export { HeaderOne } from "./HeaderOne"
-export { HeaderTwo } from "./HeaderTwo"
-export { HeaderThree } from "./HeaderThree"
-export { BodyText } from "./BodyText"
-export { SubText } from "./SubText"
-export { SubierText } from "./SubierText"

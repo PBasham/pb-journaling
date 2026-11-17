@@ -1,2 +1,0 @@
-// colors
-export * from "./styling"

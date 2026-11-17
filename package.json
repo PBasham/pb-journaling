@@ -1,28 +1,83 @@
 {
   "name": "pb-journaling",
   "version": "1.0.0",
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "expo-router/entry",
+  "private": true,
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "dev": "expo start --dev-client --scheme pbnotes-dev",
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "db:generate": "drizzle-kit generate",
+    "e2e:build": "EXPO_OFFLINE=1 expo export --platform web --output-dir dist-e2e",
+    "e2e": "playwright test"
   },
   "dependencies": {
-    "@expo/vector-icons": "^13.0.0",
-    "@react-native-async-storage/async-storage": "^1.23.1",
-    "@types/styled-components-react-native": "^5.2.5",
-    "expo": "~49.0.15",
-    "expo-status-bar": "~1.6.0",
-    "react": "18.2.0",
-    "react-native": "0.72.6",
-    "react-native-safe-area-context": "^4.8.2",
-    "styled-components": "^6.1.8"
+    "@10play/react-native-web-webview": "^0.0.3",
+    "@10play/tentap-editor": "^1.1.0",
+    "@expo/vector-icons": "^15.0.2",
+    "drizzle-orm": "^0.45.4",
+    "expo": "~58.0.23",
+    "expo-constants": "~58.0.15",
+    "expo-crypto": "~58.0.7",
+    "expo-dev-client": "~58.0.18",
+    "expo-font": "~58.0.11",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-splash-screen": "~58.0.13",
+    "expo-sqlite": "~58.0.15",
+    "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-web": "~0.21.4",
+    "react-native-webview": "14.0.1",
+    "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@types/react": "~18.2.14",
-    "typescript": "^5.1.3"
+    "@jest/globals": "^30.5.2",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "~19.3.0",
+    "@types/sql.js": "^1.4.11",
+    "babel-plugin-inline-import": "^3.0.0",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4",
+    "jest": "^30.5.2",
+    "jest-expo": "~58.0.14",
+    "sql.js": "^1.15.2",
+    "typescript": "~6.0.3"
   },
-  "private": true
+  "jest": {
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/e2e/"
+    ],
+    "globalSetup": "<rootDir>/test/globalSetup.js",
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ],
+    "moduleNameMapper": {
+      "^expo-crypto$": "<rootDir>/test/mockExpoCrypto.js"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setupSqlJs.ts"
+    ]
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
 }

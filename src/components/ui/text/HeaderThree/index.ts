@@ -1,1 +1,0 @@
-export { default as HeaderThree } from "./HeaderThree"
